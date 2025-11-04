@@ -1,0 +1,4290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Tournoi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8'
+                        },
+                        secondary: {
+                            50: '#faf5ff',
+                            100: '#f3e8ff',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9'
+                        },
+                        success: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a'
+                        },
+                        warning: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            500: '#f59e0b',
+                            600: '#d97706'
+                        },
+                        danger: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            500: '#ef4444',
+                            600: '#dc2626'
+                        }
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+                        'medium': '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .tie-highlight {
+            background-color: #fdf2f8;
+            border-left: 4px solid #ec4899;
+        }
+        .first-place {
+            border-left: 4px solid #10b981;
+        }
+        .second-place {
+            border-left: 4px solid #3b82f6;
+        }
+        .hidden {
+            display: none;
+        }
+        
+        /* Styles pour les cartes modernes */
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            padding: 16px 20px;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        /* Navigation améliorée */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: #64748b;
+            white-space: nowrap;
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+        
+        .nav-item:not(.active):hover {
+            background-color: #f1f5f9;
+            color: #334155;
+        }
+        
+        /* Boutons améliorés */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            box-shadow: 0 2px 5px rgba(59, 130, 246, 0.2);
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 2px 5px rgba(16, 185, 129, 0.2);
+        }
+        
+        .btn-success:hover {
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            box-shadow: 0 2px 5px rgba(245, 158, 11, 0.2);
+        }
+        
+        .btn-warning:hover {
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 2px 5px rgba(239, 68, 68, 0.2);
+        }
+        
+        .btn-danger:hover {
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Bouton compact */
+        .btn-compact {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        /* Style pour les boutons super-compacts */
+        .btn-super-compact {
+            padding: 6px 10px !important;
+            font-size: 12px !important;
+            line-height: 1.2 !important;
+            min-height: auto !important;
+        }
+        
+        /* Inputs améliorés */
+        .input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-primary {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .badge-success {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .badge-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        /* Tableaux améliorés */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th {
+            background-color: #f8fafc;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Match cards */
+        .match-card {
+            background: white;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+        }
+        
+        .match-card:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+        }
+        
+        /* Navigation mobile COMPACTE */
+        @media (max-width: 768px) {
+            .mobile-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: white;
+                padding: 8px 12px;
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+                z-index: 50;
+                display: flex;
+                justify-content: space-between;
+                height: 60px;
+            }
+            
+            .mobile-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                padding: 6px 8px;
+                border-radius: 8px;
+                font-size: 10px;
+                color: #64748b;
+                transition: all 0.2s ease;
+                flex: 1;
+                max-width: 60px;
+            }
+            
+            .mobile-nav-item.active {
+                background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+                color: white;
+            }
+            
+            .mobile-nav-item i {
+                font-size: 14px;
+                margin-bottom: 1px;
+            }
+            
+            .desktop-nav {
+                display: none;
+            }
+            
+            .main-content {
+                padding-bottom: 70px;
+            }
+            
+            .card {
+                margin-bottom: 16px;
+            }
+            
+            .btn {
+                padding: 12px 16px;
+                width: 100%;
+                justify-content: center;
+                margin-bottom: 8px;
+            }
+
+            /* Styles pour les bandeaux d'horaires */
+            .time-slot-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .time-slot-header .time-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+            
+            .time-slot-header .time-info select {
+                width: 100%;
+            }
+            
+            .time-slot-header .actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-nav {
+                display: none;
+            }
+            
+            .desktop-nav {
+                display: flex;
+            }
+        }
+        
+        /* Styles pour l'impression */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .view:not(.hidden),
+            .view:not(.hidden) * {
+                visibility: visible;
+            }
+            .view:not(.hidden) {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .bg-white {
+                background: white !important;
+            }
+            nav, .print-btn, .mobile-nav {
+                display: none !important;
+            }
+        }
+
+        /* Styles améliorés pour le bouton d'impression volant */
+        .print-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .print-btn:hover {
+            opacity: 1;
+            transform: translateY(-2px) scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Position sur mobile */
+        @media (max-width: 768px) {
+            .print-btn {
+                bottom: 70px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+            }
+        }
+
+        /* Optionnel : bouton réduit quand on scroll */
+        .print-btn.scrolled {
+            opacity: 0.5;
+            transform: scale(0.9);
+        }
+
+        .print-btn.scrolled:hover {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        /* Styles pour la sauvegarde mobile */
+        .save-indicator {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .save-success {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .save-error {
+            background-color: #ef4444;
+            color: white;
+        }
+        
+        .auto-save-indicator {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            background-color: #3b82f6;
+            color: white;
+            opacity: 0.8;
+        }
+
+        /* Indicateur de mise à jour automatique */
+        #auto-update-indicator {
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Position sur mobile */
+        @media (max-width: 768px) {
+            #auto-update-indicator {
+                bottom: 80px;
+                left: 10px;
+            }
+        }
+        
+        /* Animation pour les notifications */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Bandeau d'horaires */
+        .time-slot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .time-slot-header .time-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .time-slot-header .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Date display */
+        .date-display {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        /* Styles pour le bouton "Mettre à jour" volant */
+        .floating-update-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 99;
+            padding: 10px 16px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease;
+            opacity: 0.8;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .floating-update-btn:hover {
+            opacity: 1;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Positionnement sur mobile */
+        @media (max-width: 768px) {
+            .floating-update-btn {
+                bottom: 130px;
+                right: 15px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .floating-update-btn i {
+                margin-right: 4px;
+            }
+        }
+
+        /* Bouton réduit quand on scroll */
+        .floating-update-btn.scrolled {
+            opacity: 0.6;
+            transform: scale(0.95);
+        }
+
+        .floating-update-btn.scrolled:hover {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        /* Styles pour l'inscription des équipes */
+        .department-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+        }
+
+        .relative {
+            position: relative;
+        }
+
+        #draw-options {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e2e8f0;
+            z-index: 20;
+        }
+
+        /* MODIFICATIONS APPORTÉES */
+        
+        /* Champs de noms plus grands */
+        .team-name-input {
+            min-width: 200px !important;
+            font-size: 16px !important;
+            padding: 12px 16px !important;
+        }
+        
+        /* Champs de département plus petits */
+        .team-dept-input {
+            width: 80px !important;
+            font-size: 14px !important;
+            padding: 8px 12px !important;
+        }
+
+        /* Styles pour le chronomètre */
+        #floating-timer {
+            min-width: 160px;
+            transition: all 0.3s ease;
+        }
+
+        #timer-display {
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            font-family: 'Courier New', monospace;
+        }
+
+        .timer-running {
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4) !important;
+            animation: pulse 2s infinite;
+        }
+
+        .timer-paused {
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4) !important;
+        }
+
+        .timer-finished {
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important;
+            animation: alarmPulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 4px 20px rgba(34, 197, 94, 0.6); }
+            100% { box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4); }
+        }
+
+        @keyframes alarmPulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(239, 68, 68, 0.6); }
+            50% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.8); }
+        }
+
+        .timer-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .timer-settings {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .timer-settings input {
+            width: 60px;
+            padding: 4px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        /* Position sur mobile */
+        @media (max-width: 768px) {
+            #floating-timer {
+                top: 70px;
+                left: 10px;
+                transform: scale(0.9);
+                min-width: 140px;
+            }
+            
+            #toggle-timer-btn {
+                top: 70px;
+                left: 10px;
+            }
+
+            .timer-settings {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .timer-settings input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Chronomètre flottant -->
+    <div id="floating-timer" class="fixed top-4 left-4 bg-primary-500 text-white px-4 py-3 rounded-lg shadow-lg z-40 no-print hidden">
+        <div class="flex items-center gap-3">
+            <div id="timer-display" class="text-xl font-mono font-bold">17:00</div>
+            <div class="timer-controls">
+                <button id="start-timer" class="btn btn-success btn-super-compact">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button id="pause-timer" class="btn btn-warning btn-super-compact">
+                    <i class="fas fa-pause"></i>
+                </button>
+                <button id="reset-timer" class="btn btn-danger btn-super-compact">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+        </div>
+        <div class="timer-settings">
+            <input type="number" id="timer-minutes" min="1" max="60" value="17" class="text-black">
+            <span>min</span>
+            <button id="apply-timer" class="btn btn-primary btn-super-compact">
+                <i class="fas fa-check"></i>
+            </button>
+        </div>
+        <div class="text-xs text-center mt-1 opacity-80" id="timer-status">Prêt</div>
+    </div>
+
+    <!-- Bouton pour afficher/masquer le chrono -->
+    <button id="toggle-timer-btn" class="fixed top-4 left-4 bg-primary-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-40 no-print" title="Afficher le chronomètre">
+        <i class="fas fa-stopwatch"></i>
+    </button>
+
+    <!-- Indicateur de sauvegarde -->
+    <div id="save-indicator" class="save-indicator hidden"></div>
+    <div id="auto-save-indicator" class="auto-save-indicator hidden">
+        <i class="fas fa-sync-alt mr-1"></i>Auto-sauvegarde
+    </div>
+
+    <!-- Indicateur de mise à jour automatique -->
+    <div id="auto-update-indicator" class="fixed bottom-20 left-4 bg-green-500 text-white px-3 py-1 rounded-lg text-xs z-40 no-print hidden">
+        <i class="fas fa-sync-alt mr-1"></i>Mis à jour
+    </div>
+
+    <header class="bg-gradient-to-r from-primary-500 to-secondary-500 text-white p-4 shadow-lg">
+        <div class="container mx-auto">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-3">
+                    <i class="fas fa-trophy"></i>
+                    Gestionnaire de Tournoi
+                </h1>
+                <div class="text-sm badge badge-primary hidden md:block">
+                    <i class="fas fa-sync-alt mr-1"></i>
+                    <span id="last-save-time">Sauvegarde automatique</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation desktop -->
+    <nav class="desktop-nav bg-white shadow-md sticky top-0 z-10 no-print">
+        <div class="container mx-auto px-4">
+            <div class="flex gap-1 py-2 overflow-x-auto">
+                <button data-view="teams" class="nav-item active">
+                    <i class="fas fa-users"></i>
+                    <span>Équipes</span>
+                </button>
+                <button data-view="groups" class="nav-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Matchs de Poule</span>
+                </button>
+                <button data-view="rankings" class="nav-item">
+                    <i class="fas fa-trophy"></i>
+                    <span>Classements</span>
+                </button>
+                <button data-view="elimination" class="nav-item">
+                    <i class="fas fa-medal"></i>
+                    <span>Phase Finale</span>
+                </button>
+                <button data-view="final-ranking" class="nav-item">
+                    <i class="fas fa-award"></i>
+                    <span>Classement Final</span>
+                </button>
+                <button data-view="settings" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Paramètres</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Navigation mobile COMPACTE -->
+    <nav class="mobile-nav no-print">
+        <button data-view="teams" class="mobile-nav-item active">
+            <i class="fas fa-users"></i>
+            <span>Équipes</span>
+        </button>
+        <button data-view="groups" class="mobile-nav-item">
+            <i class="fas fa-calendar"></i>
+            <span>Matchs</span>
+        </button>
+        <button data-view="rankings" class="mobile-nav-item">
+            <i class="fas fa-trophy"></i>
+            <span>Class.</span>
+        </button>
+        <button data-view="elimination" class="mobile-nav-item">
+            <i class="fas fa-medal"></i>
+            <span>Finale</span>
+        </button>
+        <button data-view="final-ranking" class="mobile-nav-item">
+            <i class="fas fa-award"></i>
+            <span>Final</span>
+        </button>
+        <button data-view="settings" class="mobile-nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Opt.</span>
+        </button>
+    </nav>
+
+    <main class="container mx-auto px-4 py-6 main-content">
+        <!-- Vue Équipes - MODIFIÉE POUR INCLURE L'INSCRIPTION -->
+        <div id="teams-view" class="view">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold text-gray-800">Inscription des Équipes</h2>
+                <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                    <button id="add-team" class="btn btn-success">
+                        <i class="fas fa-plus"></i>
+                        Ajouter équipe
+                    </button>
+                    
+                    <div class="relative">
+                        <button id="draw-dropdown" class="btn btn-primary flex items-center gap-2">
+                            <i class="fas fa-random"></i>
+                            Tirage au sort
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="draw-options" class="absolute hidden bg-white shadow-lg rounded-lg mt-1 z-20 min-w-full">
+                            <button class="draw-option w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-lg" data-type="random">
+                                <i class="fas fa-random mr-2"></i>Tirage aléatoire simple
+                            </button>
+                            <button class="draw-option w-full text-left px-4 py-2 hover:bg-gray-100" data-type="smart">
+                                <i class="fas fa-brain mr-2"></i>Répartition intelligente
+                            </button>
+                            <!-- MODIFICATION: Ajout du troisième type de tirage -->
+                            <button class="draw-option w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-lg" data-type="ordered">
+                                <i class="fas fa-list-ol mr-2"></i>Tirage sans mélange (ordre d'inscription)
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button id="reset-teams" class="btn btn-warning">
+                        <i class="fas fa-redo"></i>
+                        Réinitialiser
+                    </button>
+                    <button id="generate-structure" class="btn btn-primary btn-compact no-print">
+                        Générer structure
+                    </button>
+                </div>
+            </div>
+
+            <!-- Liste des équipes - NOUVEAU -->
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h3 class="text-xl font-bold">Liste des Équipes Inscrites</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-info-circle text-blue-500 text-xl"></i>
+                            <div>
+                                <p class="font-semibold">Total: <span id="total-teams-count">0</span> équipes inscrites</p>
+                                <p class="text-sm text-blue-700">24 équipes maximum pour 4 groupes de 6</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="teams-list-container" class="space-y-2 max-h-96 overflow-y-auto">
+                        <!-- Les équipes seront ajoutées ici -->
+                    </div>
+
+                    <div id="empty-teams-message" class="text-center py-8 text-gray-500">
+                        <i class="fas fa-users text-6xl mx-auto mb-4 text-gray-300"></i>
+                        <p>Aucune équipe inscrite</p>
+                        <p class="text-sm">Utilisez le bouton "Ajouter équipe" pour commencer</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Groupes après tirage - NOUVEAU -->
+            <div id="groups-display-container" class="hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-xl font-bold">Composition des Groupes</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="groups-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Les groupes seront générés ici -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vue Matchs de Poule -->
+        <div id="groups-view" class="view hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold text-gray-800">Matchs de Poule</h2>
+                <button id="generate-group-matches" class="btn btn-primary btn-compact no-print">
+                    Générer structure
+                </button>
+            </div>
+
+            <!-- Date du tournoi -->
+            <div class="date-display no-print">
+                <i class="fas fa-calendar mr-2"></i>
+                <span id="tournament-date-display">Date du tournoi</span>
+            </div>
+
+            <div id="group-matches-container">
+                <!-- Les matchs de poule seront générés ici dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Vue Classements -->
+        <div id="rankings-view" class="view hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold text-gray-800">Classements</h2>
+                <div class="flex flex-col md:flex-row items-start md:items-center gap-3 no-print">
+                    <span class="badge badge-success">
+                        ✓ Mise à jour automatique
+                    </span>
+                    <button id="update-brackets" class="btn btn-success btn-compact">
+                        Mettre à jour
+                    </button>
+                </div>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h3 class="text-lg font-bold">Critères de départage en cas d'égalité</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
+                        <div class="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+                            <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                            <span>1. Goal Average Particulier</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
+                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span>2. Goal Average Général</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 bg-yellow-50 rounded-lg">
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <span>3. Meilleure Attaque</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                            <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
+                            <span>4. Victoires aux tirs au but</span>
+                        </div>
+                        <div class="flex items-center gap-2 p-2 bg-pink-100 rounded-lg border border-pink-300">
+                            <div class="w-3 h-3 bg-pink-500 rounded-full"></div>
+                            <span class="font-semibold">Équipes à égalité parfaite</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                        <p class="text-sm text-blue-700">
+                            <strong>Note :</strong> Les tirs au but ne donnent pas de points supplémentaires. 
+                            Ils servent uniquement à départager le classement en cas d'égalité parfaite après application des critères ci-dessus.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="rankings-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Les classements seront générés ici dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Vue Phase Finale -->
+        <div id="elimination-view" class="view hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-gray-800">Phase Finale</h2>
+                    <span class="badge badge-success">
+                        ✓ Mise à jour automatique
+                    </span>
+                </div>
+                <div class="flex flex-col md:flex-row gap-2 no-print">
+                    <button id="generate-elimination-matches" class="btn btn-primary btn-compact">
+                        Générer structure
+                    </button>
+                    <button id="update-elimination-teams" class="btn btn-success btn-compact">
+                        Mettre à jour
+                    </button>
+                </div>
+            </div>
+
+            <!-- Date du tournoi -->
+            <div class="date-display no-print">
+                <i class="fas fa-calendar mr-2"></i>
+                <span id="elimination-date-display">Date du tournoi</span>
+            </div>
+
+            <div id="elimination-matches-container">
+                <!-- Les matchs d'élimination seront générés ici dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Vue Classement Final -->
+        <div id="final-ranking-view" class="view hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold text-gray-800">Classement Final</h2>
+                <button id="update-final-ranking" class="btn btn-success btn-compact no-print">
+                    Actualiser
+                </button>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-body">
+                    <div id="final-ranking-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <!-- Le classement final sera généré ici dynamiquement -->
+                    </div>
+                    
+                    <div id="empty-ranking-message" class="text-center py-8 text-gray-500">
+                        <i class="fas fa-award text-6xl mx-auto mb-4 text-gray-300"></i>
+                        <p>Le classement final sera calculé automatiquement</p>
+                        <p class="text-sm">une fois que tous les matchs de la phase finale seront saisis.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-lg font-bold">Légende des places</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 bg-yellow-100 border-2 border-yellow-300 rounded"></div>
+                            <span>1ère place (Champion)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded"></div>
+                            <span>2ème place (Finaliste)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 bg-orange-100 border-2 border-orange-300 rounded"></div>
+                            <span>3ème place</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 bg-blue-50 border-2 border-blue-200 rounded"></div>
+                            <span>4ème place</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vue Paramètres -->
+        <div id="settings-view" class="view hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Paramètres</h2>
+
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h3 class="text-lg font-bold">Configuration générale</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Poules (séparées par virgules)</label>
+                            <input id="pools-input" type="text" class="input" placeholder="A, B, C, D">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Terrains (séparés par virgules)</label>
+                            <input id="fields-input" type="text" class="input" placeholder="A, B, C, D">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Équipes par poule</label>
+                            <input id="teams-per-pool-input" type="number" min="2" class="input">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Heure de début du tournoi</label>
+                            <input id="start-time-input" type="time" class="input">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Heure de fin du tournoi</label>
+                            <input id="end-time-input" type="time" class="input">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">
+                                Durée par défaut des matchs (minutes) - Actuelle: <span id="match-duration-value">17</span> min
+                            </label>
+                            <input id="match-duration-input" type="range" min="5" max="30" step="1" class="w-full">
+                            <div class="flex justify-between text-xs text-gray-600">
+                                <span>5 min</span>
+                                <span>15 min</span>
+                                <span>30 min</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Durée par défaut des pauses (minutes)</label>
+                            <input id="break-duration-input" type="number" min="0" max="120" class="input">
+                        </div>
+                    </div>
+
+                    <!-- Configuration des dates du tournoi -->
+                    <div class="mt-6 border-t pt-6">
+                        <h4 class="text-lg font-bold mb-4">Dates et Horaires du Tournoi</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Date de début du tournoi</label>
+                                <input id="tournament-start-date" type="date" class="input">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Nombre de jours</label>
+                                <input id="tournament-days" type="number" min="1" max="7" value="1" class="input">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Heures par jour</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input id="daily-start-time" type="time" class="input" value="09:00">
+                                    <input id="daily-end-time" type="time" class="input" value="18:00">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="daily-schedule-container" class="mt-4 space-y-3">
+                            <!-- Les horaires journaliers seront générés ici -->
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <h4 class="font-bold mb-2">Statistiques du tournoi</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <span class="font-semibold">Matchs programmés:</span>
+                                <div id="total-matches">0</div>
+                            </div>
+                            <div>
+                                <span class="font-semibold">Créneaux horaires:</span>
+                                <div id="total-time-slots">0</div>
+                            </div>
+                            <div>
+                                <span class="font-semibold">Durée totale matchs:</span>
+                                <div id="total-match-duration">0h</div>
+                            </div>
+                            <div>
+                                <span class="font-semibold">Durée totale pauses:</span>
+                                <div id="total-break-duration">0h</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h3 class="text-lg font-bold">Structure du Tournoi</h3>
+                </div>
+                <div class="card-body">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                                <h4 class="font-semibold">Matchs de poule du matin</h4>
+                                <p class="text-sm text-gray-600">12 créneaux horaires</p>
+                            </div>
+                            <div class="badge badge-primary">Phase de groupes</div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                                <h4 class="font-semibold">Matchs de poule de l'après-midi</h4>
+                                <p class="text-sm text-gray-600">3 créneaux horaires</p>
+                            </div>
+                            <div class="badge badge-primary">Phase de groupes</div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                                <h4 class="font-semibold">Phase finale</h4>
+                                <p class="text-sm text-gray-600">9 créneaux horaires</p>
+                            </div>
+                            <div class="badge badge-warning">Élimination directe</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h3 class="text-lg font-bold">Horaires calculés automatiquement</h3>
+                </div>
+                <div class="card-body">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div id="time-slots-container" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 text-sm">
+                            <!-- Les créneaux horaires seront générés ici dynamiquement -->
+                        </div>
+                        <p class="text-sm text-gray-600 mt-3">
+                            <span id="time-slots-count">0</span> créneaux horaires calculés - Durée totale: <span id="total-tournament-duration">0h</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h3 class="text-lg font-bold">Coupures et Pauses</h3>
+                </div>
+                <div class="card-body">
+                    <div class="flex justify-between items-center mb-4">
+                        <p class="text-sm text-gray-600">Configurez les pauses entre les créneaux horaires</p>
+                        <button id="add-break" class="btn btn-success no-print btn-super-compact">
+                            <i class="fas fa-plus mr-1"></i> Ajouter
+                        </button>
+                    </div>
+
+                    <div id="breaks-container" class="space-y-3">
+                        <!-- Les pauses seront générées ici dynamiquement -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h3 class="text-lg font-bold">Sauvegarde et Chargement</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button id="save-tournament" class="btn btn-success no-print">
+                            <i class="fas fa-download"></i>
+                            Sauvegarder le tournoi
+                        </button>
+
+                        <div>
+                            <input type="file" id="tournament-file" accept=".json" class="hidden">
+                            <label for="tournament-file" class="btn btn-primary no-print">
+                                <i class="fas fa-upload"></i>
+                                Charger un tournoi
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Options de sauvegarde automatique -->
+                    <div class="mt-4 p-4 bg-green-50 rounded-lg">
+                        <h4 class="font-bold mb-2">Sauvegarde automatique</h4>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-green-700">Sauvegarde automatique toutes les 30 secondes</p>
+                                <p class="text-xs text-green-600">Dernière sauvegarde: <span id="last-save-time">Jamais</span></p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">Activer:</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="auto-save-toggle" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h3 class="text-lg font-bold">Options d'affichage</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex items-center justify-between">
+                            <span>Mode sombre</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="dark-mode-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span>Animations</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="animations-toggle" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span>Notifications sonores</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="sound-toggle" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span>Mode hors-ligne</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="offline-mode-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-lg font-bold">Actions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button id="reset-tournament" class="btn btn-danger no-print">
+                            <i class="fas fa-trash"></i>
+                            Réinitialiser le tournoi
+                        </button>
+
+                        <button id="export-data" class="btn btn-primary no-print">
+                            <i class="fas fa-file-export"></i>
+                            Exporter les données
+                        </button>
+
+                        <button id="print-tournament" class="btn btn-warning no-print">
+                            <i class="fas fa-print"></i>
+                            Imprimer le tournoi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bouton d'impression compact -->
+    <button id="print-btn" class="print-btn btn btn-primary no-print" title="Imprimer la vue actuelle">
+        <i class="fas fa-print"></i>
+    </button>
+
+    <!-- Bouton "Mettre à jour" volant pour le classement final -->
+    <button id="floating-update-ranking" class="floating-update-btn btn btn-success no-print hidden" title="Actualiser manuellement le classement">
+        <i class="fas fa-sync-alt mr-2"></i>Actualiser
+    </button>
+
+    <script>
+        // Configuration par défaut
+        const defaultConfig = {
+            pools: ['A', 'B', 'C', 'D'],
+            teamsPerPool: 6,
+            fields: ['A', 'B', 'C', 'D'],
+            matchDuration: 17,
+            startTime: '09:00',
+            endTime: '18:00',
+            breakDuration: 15,
+            tournamentStartDate: new Date().toISOString().split('T')[0],
+            tournamentDays: 1,
+            dailySchedule: [
+                { startTime: '09:00', endTime: '18:00' }
+            ]
+        };
+
+        const defaultBreaks = [
+            { afterSlot: 11, label: 'PAUSE DÉJEUNER', duration: 63 },
+            { afterSlot: 14, label: 'TAB', duration: 15 },
+            { afterSlot: 17, label: 'PAUSE', duration: 15 }
+        ];
+
+        // État de l'application
+        let config = {...defaultConfig};
+        let teams = {};
+        let timeSlots = [];
+        let breaks = [...defaultBreaks];
+        let groupMatches = [];
+        let eliminationMatches = [];
+        let currentView = 'teams';
+        let matchDurations = {};
+        let finalRanking = Array(24).fill('À déterminer');
+        let autoSaveEnabled = true;
+        let autoSaveInterval;
+        let lastSaveTime = null;
+
+        // NOUVEAU: État pour l'inscription des équipes
+        let allTeams = [];
+
+        // Variables pour le chronomètre UNIQUE
+        let timerInterval = null;
+        let timerSeconds = 17 * 60; // 17 minutes par défaut en secondes
+        let timerRunning = false;
+        let timerDuration = 17 * 60; // Durée configurée en secondes
+        let timerFinished = false;
+
+        // Audio context pour les sons
+        let audioContext = null;
+        let audioUnlocked = false;
+
+        // Fonction de notification
+        function showNotification(message, type = 'info') {
+            const colors = {
+                info: 'bg-blue-500',
+                success: 'bg-green-500',
+                warning: 'bg-yellow-500',
+                error: 'bg-red-500'
+            };
+            
+            // Créer la notification
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-transform duration-300 translate-x-full no-print notification`;
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-bell"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animation d'entrée
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Supprimer après 3 secondes
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Fonction utilitaire pour les noms de vues
+        function getViewName(viewKey) {
+            const viewNames = {
+                'teams': 'Équipes',
+                'groups': 'Matchs de Poule', 
+                'rankings': 'Classements',
+                'elimination': 'Phase Finale',
+                'final-ranking': 'Classement Final',
+                'settings': 'Paramètres'
+            };
+            return viewNames[viewKey] || viewKey;
+        }
+
+        // FONCTIONS DU CHRONOMÈTRE AVEC SON CORRIGÉ
+
+        // Initialiser l'audio
+        function initAudio() {
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log('AudioContext créé');
+                } catch (error) {
+                    console.error('Erreur lors de la création de AudioContext:', error);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Débloquer l'audio (nécessaire pour les navigateurs)
+        function unlockAudio() {
+            if (!audioContext) {
+                if (!initAudio()) return false;
+            }
+            
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    console.log('Audio débloqué');
+                    audioUnlocked = true;
+                    showNotification('🔊 Son du chronomètre activé', 'success');
+                }).catch(error => {
+                    console.error('Erreur lors du déblocage audio:', error);
+                    showNotification('🔇 Son désactivé par le navigateur', 'warning');
+                });
+            } else {
+                audioUnlocked = true;
+            }
+            
+            return audioUnlocked;
+        }
+
+        // FONCTIONS DU CHRONOMÈTRE AVEC NOUVELLES SONNERIES
+
+// Jouer un bip sonore avec fréquence et durée personnalisables
+function playBeepSound(frequency = 800, duration = 0.3, count = 1) {
+    console.log(`Playing beep: ${frequency}Hz, ${duration}s, ${count} times`);
+    
+    if (!audioUnlocked) {
+        console.log("Audio not unlocked, trying to unlock...");
+        if (!unlockAudio()) {
+            console.log("Failed to unlock audio");
+            return;
+        }
+    }
+    
+    try {
+        for (let i = 0; i < count; i++) {
+            setTimeout(() => {
+                try {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = 'sine';
+                    
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + duration);
+                    
+                    console.log(`Beep ${i + 1}/${count} played successfully`);
+                } catch (error) {
+                    console.error('Error playing beep:', error);
+                }
+            }, i * (duration * 1000 + 150)); // Augmenter le délai entre les bips
+        }
+    } catch (error) {
+        console.error('Error in playBeepSound:', error);
+    }
+}
+
+// Jouer une alarme finale
+function playAlarmSound() {
+    if (!audioUnlocked) {
+        if (!unlockAudio()) {
+            return;
+        }
+    }
+    
+    try {
+        // Alarme finale de 3 secondes avec oscillation
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Oscillation de fréquence pour un son d'alarme plus perçant
+        oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.5);
+        oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 1.0);
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 1.5);
+        oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 2.0);
+        
+        oscillator.type = 'sawtooth';
+        
+        // Maintenir le volume pendant 3 secondes
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + 2.7);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 3.0);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 3.0);
+        
+    } catch (error) {
+        console.log('Erreur lors de la lecture de l\'alarme:', error);
+    }
+}
+
+function updateTimer() {
+    if (timerSeconds > 0) {
+        timerSeconds--;
+        updateTimerDisplay();
+        
+        console.log(`Timer: ${timerSeconds}s`);
+        
+        // Gestion séparée des différentes alertes
+        handleTimerAlerts();
+        
+        // Fin du temps
+        if (timerSeconds === 0) {
+            handleTimerEnd();
+        }
+    }
+}
+
+function handleTimerAlerts() {
+    console.log(`Checking alerts for: ${timerSeconds}s`); // Debug
+    
+    switch(timerSeconds) {
+        case 60:
+            console.log("1 minute - playing 1 beep");
+            showNotification('⏰ 1 minute restante !', 'warning');
+            playBeepSound(800, 0.3, 1);
+            break;
+            
+        case 30:
+            console.log("30 seconds - playing 2 beeps");
+            showNotification('⏰ 30 secondes !', 'warning');
+            playBeepSound(800, 0.3, 2);
+            break;
+            
+        case 5:
+            console.log("5 seconds - playing 1 beep");
+            showNotification('⏰ Dernières secondes !', 'error');
+            playBeepSound(1000, 0.1, 1);
+            break;
+            
+        case 4:
+            console.log("4 seconds - playing 1 beep");
+            playBeepSound(1000, 0.1, 1);
+            break;
+            
+        case 3:
+            console.log("3 seconds - playing 1 beep");
+            playBeepSound(1000, 0.1, 1);
+            break;
+            
+        case 2:
+            console.log("2 seconds - playing 1 beep");
+            playBeepSound(1000, 0.1, 1);
+            break;
+            
+        case 1:
+            console.log("1 second - playing 1 beep");
+            playBeepSound(1000, 0.1, 1);
+            break;
+            
+        default:
+            // Aucune action pour les autres secondes
+            break;
+    }
+}
+
+function handleTimerEnd() {
+    console.log("Timer finished!");
+    timerFinished = true;
+    timerRunning = false;
+    clearInterval(timerInterval);
+    
+    // Mettre à jour les styles
+    const timer = document.getElementById('floating-timer');
+    timer.classList.remove('timer-running', 'timer-paused');
+    timer.classList.add('timer-finished');
+    
+    updateTimerStatus();
+    showNotification('⏰ TEMPS ÉCOULÉ !', 'error');
+    playAlarmSound();
+    
+    // Réinitialiser automatiquement après 5 secondes
+    setTimeout(() => {
+        if (!timerRunning) {
+            resetTimer();
+        }
+    }, 5000);
+}
+
+function resetTimer() {
+    timerRunning = false;
+    timerFinished = false;
+    clearInterval(timerInterval);
+    timerSeconds = timerDuration;
+    
+    // Mettre à jour les styles
+    const timer = document.getElementById('floating-timer');
+    timer.classList.remove('timer-running', 'timer-paused', 'timer-finished');
+    
+    updateTimerDisplay();
+    updateTimerStatus();
+    showNotification('Chronomètre réinitialisé', 'info');
+}
+
+// Fonctions du chronomètre UNIQUE
+function initializeTimer() {
+    const toggleBtn = document.getElementById('toggle-timer-btn');
+    const timer = document.getElementById('floating-timer');
+    const startBtn = document.getElementById('start-timer');
+    const pauseBtn = document.getElementById('pause-timer');
+    const resetBtn = document.getElementById('reset-timer');
+    const applyBtn = document.getElementById('apply-timer');
+    const minutesInput = document.getElementById('timer-minutes');
+    
+    // Initialiser l'audio
+    initAudio();
+    
+    // Débloquer l'audio au premier clic sur le chronomètre
+    function unlockAudioOnInteraction() {
+        unlockAudio();
+        // Retirer les écouteurs après activation
+        timer.removeEventListener('click', unlockAudioOnInteraction);
+        toggleBtn.removeEventListener('click', unlockAudioOnInteraction);
+    }
+    
+    timer.addEventListener('click', unlockAudioOnInteraction);
+    toggleBtn.addEventListener('click', unlockAudioOnInteraction);
+    
+    // Bouton toggle
+    toggleBtn.addEventListener('click', function() {
+        timer.classList.toggle('hidden');
+        this.classList.toggle('hidden');
+    });
+    
+    // Bouton start
+    startBtn.addEventListener('click', startTimer);
+    
+    // Bouton pause
+    pauseBtn.addEventListener('click', pauseTimer);
+    
+    // Bouton reset
+    resetBtn.addEventListener('click', resetTimer);
+    
+    // Bouton appliquer la durée
+    applyBtn.addEventListener('click', function() {
+        const minutes = parseInt(minutesInput.value) || 17;
+        setTimerDuration(minutes);
+        showNotification(`Durée du chrono définie à ${minutes} minutes`, 'success');
+    });
+    
+    // Entrée dans le champ minutes
+    minutesInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            applyBtn.click();
+        }
+    });
+    
+    // Mettre à jour l'affichage initial
+    updateTimerDisplay();
+    updateTimerStatus();
+}
+
+function startTimer() {
+    if (!timerRunning && timerSeconds > 0) {
+        timerRunning = true;
+        timerFinished = false;
+        timerInterval = setInterval(updateTimer, 1000);
+        
+        // Mettre à jour les styles
+        const timer = document.getElementById('floating-timer');
+        timer.classList.remove('timer-paused', 'timer-finished');
+        timer.classList.add('timer-running');
+        
+        updateTimerStatus();
+        showNotification('Chronomètre démarré', 'success');
+    }
+}
+
+function pauseTimer() {
+    if (timerRunning) {
+        timerRunning = false;
+        clearInterval(timerInterval);
+        
+        // Mettre à jour les styles
+        const timer = document.getElementById('floating-timer');
+        timer.classList.remove('timer-running', 'timer-finished');
+        timer.classList.add('timer-paused');
+        
+        updateTimerStatus();
+        showNotification('Chronomètre mis en pause', 'warning');
+    }
+}
+
+        function updateTimerDisplay() {
+            const display = document.getElementById('timer-display');
+            const minutes = Math.floor(timerSeconds / 60);
+            const seconds = timerSeconds % 60;
+            display.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Changer la couleur quand le temps est presque écoulé
+            if (timerSeconds <= 60) { // Dernière minute
+                display.classList.add('text-red-400');
+            } else {
+                display.classList.remove('text-red-400');
+            }
+        }
+
+        function updateTimerStatus() {
+            const status = document.getElementById('timer-status');
+            if (timerFinished) {
+                status.textContent = 'Terminé';
+                status.classList.add('text-red-300');
+                status.classList.remove('text-green-300', 'text-yellow-300');
+            } else if (timerRunning) {
+                status.textContent = 'En cours';
+                status.classList.add('text-green-300');
+                status.classList.remove('text-red-300', 'text-yellow-300');
+            } else if (timerSeconds === timerDuration) {
+                status.textContent = 'Prêt';
+                status.classList.remove('text-red-300', 'text-green-300', 'text-yellow-300');
+            } else {
+                status.textContent = 'En pause';
+                status.classList.add('text-yellow-300');
+                status.classList.remove('text-red-300', 'text-green-300');
+            }
+        }
+
+        function setTimerDuration(minutes) {
+            timerDuration = minutes * 60;
+            resetTimer();
+            document.getElementById('timer-minutes').value = minutes;
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            setupFloatingButtons();
+            updateStatistics();
+            startAutoSave();
+            
+            // NOUVEAU: Initialisation de l'inscription des équipes
+            setupTeamRegistration();
+            renderTeamsList();
+            
+            // Notification pour le son
+            setTimeout(() => {
+                showNotification('🔊 Cliquez sur le chronomètre pour activer les sons d\'alarme', 'info');
+            }, 3000);
+        });
+
+        function initializeApp() {
+            // Charger depuis le stockage local si disponible
+            loadFromLocalStorage();
+            
+            // Initialiser la configuration du formulaire
+            updateSettingsForm();
+            
+            // Calculer les time slots
+            calculateAllTimeSlots();
+            
+            // Générer les structures par défaut
+            generateDefaultGroupMatches();
+            generateDefaultEliminationMatches();
+            
+            // Initialiser le chronomètre UNIQUE
+            initializeTimer();
+            
+            // Mettre à jour l'interface
+            renderTimeSlots();
+            renderBreaks();
+            renderDailySchedule();
+            
+            // NOUVEAU: Initialiser l'affichage des équipes inscrites
+            renderTeamsList();
+            
+            showNotification('Application initialisée avec succès!', 'success');
+        }
+
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-btn, .nav-item, .mobile-nav-item').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const view = this.getAttribute('data-view');
+                    setCurrentView(view);
+                    showNotification(`Navigation vers: ${getViewName(view)}`, 'info');
+                });
+            });
+
+            // Mise à jour automatique des classements quand les scores changent
+            document.addEventListener('change', function(e) {
+                if (autoSaveEnabled && (
+                    e.target.classList.contains('score1-input') ||
+                    e.target.classList.contains('score2-input') ||
+                    e.target.classList.contains('penalty1-input') ||
+                    e.target.classList.contains('penalty2-input') ||
+                    e.target.classList.contains('elim-score1-input') ||
+                    e.target.classList.contains('elim-score2-input') ||
+                    e.target.classList.contains('elim-penalty1-input') ||
+                    e.target.classList.contains('elim-penalty2-input')
+                )) {
+                    // Mettre à jour les classements automatiquement
+                    updateRankingsAutomatically();
+                }
+            });
+
+            // Équipes
+            document.getElementById('generate-structure').addEventListener('click', function() {
+                generateDefaultStructure();
+                showNotification('Structure générée avec succès', 'success');
+            });
+
+            // Matchs de poule
+            document.getElementById('generate-group-matches').addEventListener('click', function() {
+                generateDefaultGroupMatches();
+                showNotification('Matchs de poule générés', 'success');
+            });
+
+            // Classements
+            document.getElementById('update-brackets').addEventListener('click', function() {
+                updateRankingsAutomatically();
+                showNotification('Phase finale mise à jour manuellement', 'success');
+            });
+
+            // Phase finale
+            document.getElementById('generate-elimination-matches').addEventListener('click', function() {
+                generateDefaultEliminationMatches();
+                showNotification('Phase finale générée', 'success');
+            });
+            
+            document.getElementById('update-elimination-teams').addEventListener('click', function() {
+                updateRankingsAutomatically();
+                showNotification('Équipes de la phase finale mises à jour manuellement', 'success');
+            });
+
+            // Classement final
+            document.getElementById('update-final-ranking').addEventListener('click', function() {
+                updateRankingsAutomatically();
+                showNotification('Classement final actualisé manuellement', 'success');
+            });
+
+            // Paramètres
+            document.getElementById('pools-input').addEventListener('change', function() {
+                updateConfigFromForm();
+                showNotification('Poules mises à jour', 'info');
+            });
+            
+            document.getElementById('fields-input').addEventListener('change', function() {
+                updateConfigFromForm();
+                showNotification('Terrains mis à jour', 'info');
+            });
+            
+            document.getElementById('teams-per-pool-input').addEventListener('change', function() {
+                updateConfigFromForm();
+                showNotification('Nombre d\'équipes par poule mis à jour', 'info');
+            });
+            
+            document.getElementById('start-time-input').addEventListener('change', function() {
+                updateConfigFromForm();
+                showNotification('Heure de début mise à jour', 'info');
+            });
+            
+            document.getElementById('end-time-input').addEventListener('change', function() {
+                updateConfigFromForm();
+                showNotification('Heure de fin mise à jour', 'info');
+            });
+            
+            document.getElementById('match-duration-input').addEventListener('input', function() {
+                updateConfigFromForm();
+                showNotification('Durée des matchs mise à jour', 'info');
+            });
+            
+            document.getElementById('break-duration-input').addEventListener('change', function() {
+                updateConfigFromForm();
+                showNotification('Durée des pauses mise à jour', 'info');
+            });
+
+            // Dates du tournoi
+            document.getElementById('tournament-start-date').addEventListener('change', function() {
+                updateConfigFromForm();
+                showNotification('Date de début mise à jour', 'info');
+            });
+            
+            document.getElementById('tournament-days').addEventListener('change', function() {
+                updateConfigFromForm();
+                renderDailySchedule();
+                showNotification('Nombre de jours mis à jour', 'info');
+            });
+            
+            document.getElementById('daily-start-time').addEventListener('change', function() {
+                updateConfigFromForm();
+                showNotification('Heure de début quotidienne mise à jour', 'info');
+            });
+            
+            document.getElementById('daily-end-time').addEventListener('change', function() {
+                updateConfigFromForm();
+                showNotification('Heure de fin quotidienne mise à jour', 'info');
+            });
+
+            // Pauses
+            document.getElementById('add-break').addEventListener('click', function() {
+                addBreak();
+            });
+
+            // Sauvegarde et chargement
+            document.getElementById('save-tournament').addEventListener('click', function() {
+                saveTournament();
+                showNotification('Tournoi sauvegardé avec succès', 'success');
+            });
+            
+            document.getElementById('tournament-file').addEventListener('change', function(event) {
+                loadTournament(event);
+            });
+
+            // Sauvegarde automatique
+            document.getElementById('auto-save-toggle').addEventListener('change', function() {
+                autoSaveEnabled = this.checked;
+                if (autoSaveEnabled) {
+                    startAutoSave();
+                    showNotification('Sauvegarde automatique activée', 'success');
+                } else {
+                    stopAutoSave();
+                    showNotification('Sauvegarde automatique désactivée', 'warning');
+                }
+            });
+
+            // Actions
+            document.getElementById('reset-tournament').addEventListener('click', function() {
+                resetEverything();
+                showNotification('Tournoi réinitialisé', 'warning');
+            });
+            
+            document.getElementById('export-data').addEventListener('click', function() {
+                saveTournament();
+                showNotification('Données exportées', 'success');
+            });
+            
+            document.getElementById('print-tournament').addEventListener('click', function() {
+                window.print();
+                showNotification('Prêt pour l\'impression', 'info');
+            });
+
+            // Bouton d'impression compact
+            document.getElementById('print-btn').addEventListener('click', function() {
+                window.print();
+                showNotification('Prêt pour l\'impression', 'info');
+            });
+
+            // Bouton "Mettre à jour" volant
+            document.getElementById('floating-update-ranking').addEventListener('click', function() {
+                updateRankingsAutomatically();
+                showNotification('Classement actualisé manuellement', 'success');
+            });
+
+            // Sauvegarde lors de la fermeture de la page
+            window.addEventListener('beforeunload', function(e) {
+                if (hasUnsavedChanges()) {
+                    autoSave();
+                }
+            });
+
+            // Sauvegarde lors des changements de données
+            document.addEventListener('input', function() {
+                if (autoSaveEnabled) {
+                    debouncedAutoSave();
+                }
+            });
+        }
+
+        // NOUVEAU: Configuration de l'inscription des équipes
+        function setupTeamRegistration() {
+            // Ajouter équipe
+            document.getElementById('add-team').addEventListener('click', function() {
+                addNewTeam();
+            });
+
+            // Réinitialiser
+            document.getElementById('reset-teams').addEventListener('click', function() {
+                resetTeams();
+            });
+
+            // Menu déroulant du tirage au sort
+            document.getElementById('draw-dropdown').addEventListener('click', function(e) {
+                e.stopPropagation();
+                const options = document.getElementById('draw-options');
+                options.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', function() {
+                document.getElementById('draw-options').classList.add('hidden');
+            });
+
+            // Options de tirage
+            document.querySelectorAll('.draw-option').forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const drawType = this.getAttribute('data-type');
+                    
+                    if (drawType === 'random') {
+                        performRandomDraw();
+                    } else if (drawType === 'smart') {
+                        performSmartDraw();
+                    } else if (drawType === 'ordered') {
+                        // MODIFICATION: Ajout du troisième type de tirage
+                        performOrderedDraw();
+                    }
+                    
+                    document.getElementById('draw-options').classList.add('hidden');
+                });
+            });
+        }
+
+        // NOUVEAU: Fonctions pour l'inscription des équipes
+        function renderTeamsList() {
+            const container = document.getElementById('teams-list-container');
+            const emptyMessage = document.getElementById('empty-teams-message');
+            const groupsDisplay = document.getElementById('groups-display-container');
+            
+            container.innerHTML = '';
+            
+            if (allTeams.length === 0) {
+                emptyMessage.classList.remove('hidden');
+                groupsDisplay.classList.add('hidden');
+            } else {
+                emptyMessage.classList.add('hidden');
+                
+                allTeams.forEach((team, index) => {
+                    const teamDiv = document.createElement('div');
+                    teamDiv.className = 'flex items-center gap-3 p-3 border rounded-lg bg-white';
+                    teamDiv.innerHTML = `
+                        <div class="flex items-center gap-3 flex-1">
+                            <span class="text-sm font-medium text-gray-500 w-8">${index + 1}.</span>
+                            <!-- MODIFICATION: Classes modifiées pour les champs de nom -->
+                            <input type="text" value="${team.name}" class="team-name-input input" placeholder="Nom de l'équipe">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <!-- MODIFICATION: Classes modifiées pour les champs de département -->
+                            <input type="text" value="${team.department || ''}" class="team-dept-input input" placeholder="Dépt.">
+                            ${team.department ? `<span class="department-badge bg-blue-100 text-blue-800 rounded-full px-2 py-1">${team.department}</span>` : ''}
+                        </div>
+                        <button class="delete-team p-2 text-red-500 hover:text-red-700 rounded">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                    
+                    container.appendChild(teamDiv);
+                    
+                    // Écouteurs d'événements - MODIFICATION: Comportement de sélection au focus
+                    const nameInput = teamDiv.querySelector('.team-name-input');
+                    nameInput.addEventListener('focus', function() {
+                        this.select();
+                    });
+                    nameInput.addEventListener('change', function() {
+                        team.name = this.value;
+                        updateTeamsCount();
+                    });
+                    
+                    const deptInput = teamDiv.querySelector('.team-dept-input');
+                    deptInput.addEventListener('focus', function() {
+                        this.select();
+                    });
+                    deptInput.addEventListener('change', function() {
+                        team.department = this.value;
+                        renderTeamsList();
+                    });
+                    
+                    const deleteButton = teamDiv.querySelector('.delete-team');
+                    deleteButton.addEventListener('click', function() {
+                        allTeams.splice(index, 1);
+                        renderTeamsList();
+                    });
+                });
+                
+                // Afficher les groupes si déjà répartis
+                if (Object.keys(teams).length > 0 && teams[config.pools[0]].length > 0) {
+                    groupsDisplay.classList.remove('hidden');
+                    renderGroupsDisplay();
+                }
+            }
+            
+            updateTeamsCount();
+        }
+
+        function addNewTeam() {
+            if (allTeams.length >= 24) {
+                alert('Maximum 24 équipes autorisées pour 4 groupes de 6');
+                return;
+            }
+            
+            const newTeam = {
+                id: `team-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                name: `Équipe ${allTeams.length + 1}`,
+                department: ''
+            };
+            
+            allTeams.push(newTeam);
+            renderTeamsList();
+        }
+
+        function resetTeams() {
+            if (confirm('Voulez-vous vraiment réinitialiser toutes les équipes ?')) {
+                allTeams = [];
+                teams = {};
+                config.pools.forEach(pool => {
+                    teams[pool] = [];
+                });
+                renderTeamsList();
+            }
+        }
+
+        function updateTeamsCount() {
+            document.getElementById('total-teams-count').textContent = allTeams.length;
+        }
+
+        // NOUVEAU: Tirage au sort - MODIFICATION: Ajout du tirage sans mélange
+        function performRandomDraw() {
+            if (allTeams.length === 0) {
+                alert('Aucune équipe à répartir');
+                return;
+            }
+            
+            if (allTeams.length !== 24) {
+                alert('Il faut exactement 24 équipes pour former 4 groupes de 6');
+                return;
+            }
+            
+            // Mélanger aléatoirement
+            const shuffledTeams = [...allTeams].sort(() => Math.random() - 0.5);
+            distributeTeamsToPools(shuffledTeams);
+            
+            alert('Tirage au sort aléatoire effectué !');
+        }
+
+        function performSmartDraw() {
+            if (allTeams.length === 0) {
+                alert('Aucune équipe à répartir');
+                return;
+            }
+            
+            if (allTeams.length !== 24) {
+                alert('Il faut exactement 24 équipes pour former 4 groupes de 6');
+                return;
+            }
+            
+            // Analyser les départements
+            const departmentAnalysis = analyzeDepartments();
+            
+            if (departmentAnalysis.hasMultipleTeams) {
+                const confirmMessage = `Certains départements ont plusieurs équipes. Voulez-vous optimiser la répartition ?\n\n${departmentAnalysis.summary}`;
+                
+                if (!confirm(confirmMessage)) {
+                    performRandomDraw();
+                    return;
+                }
+                
+                // Répartition intelligente - CORRIGÉE
+                const distributedTeams = smartDistribution();
+                distributeTeamsToPools(distributedTeams);
+                alert('Répartition intelligente effectuée !');
+            } else {
+                performRandomDraw();
+            }
+        }
+
+        // MODIFICATION: Ajout de la fonction pour le tirage sans mélange
+        function performOrderedDraw() {
+            if (allTeams.length === 0) {
+                alert('Aucune équipe à répartir');
+                return;
+            }
+            
+            if (allTeams.length !== 24) {
+                alert('Il faut exactement 24 équipes pour former 4 groupes de 6');
+                return;
+            }
+            
+            // Utiliser l'ordre d'inscription (pas de mélange)
+            distributeTeamsToPools([...allTeams]);
+            
+            alert('Tirage sans mélange effectué !');
+        }
+
+        function analyzeDepartments() {
+            const deptCount = {};
+            allTeams.forEach(team => {
+                if (team.department && team.department.trim() !== '') {
+                    deptCount[team.department] = (deptCount[team.department] || 0) + 1;
+                }
+            });
+            
+            const multipleTeams = Object.entries(deptCount).filter(([dept, count]) => count > 1);
+            let summary = "Départements avec plusieurs équipes:\n";
+            
+            multipleTeams.forEach(([dept, count]) => {
+                summary += `- ${dept}: ${count} équipes\n`;
+            });
+            
+            if (multipleTeams.length === 0) {
+                summary = "Aucun département n'a plusieurs équipes.";
+            }
+            
+            return {
+                hasMultipleTeams: multipleTeams.length > 0,
+                summary: summary
+            };
+        }
+
+        // CORRECTION: Fonction de répartition intelligente améliorée
+        function smartDistribution() {
+            // Séparer les équipes par département
+            const teamsByDept = {};
+            const teamsWithoutDept = [];
+            
+            allTeams.forEach(team => {
+                if (team.department && team.department.trim() !== '') {
+                    if (!teamsByDept[team.department]) {
+                        teamsByDept[team.department] = [];
+                    }
+                    teamsByDept[team.department].push(team);
+                } else {
+                    teamsWithoutDept.push(team);
+                }
+            });
+            
+            // Trier les départements par nombre d'équipes (décroissant)
+            const sortedDepts = Object.keys(teamsByDept)
+                .sort((a, b) => teamsByDept[b].length - teamsByDept[a].length);
+            
+            // Initialiser les groupes
+            const numGroups = config.pools.length;
+            const distributedTeams = Array(numGroups).fill().map(() => []);
+            
+            // Répartir les équipes avec département de manière équilibrée
+            let currentGroup = 0;
+            
+            // Pour chaque département, répartir ses équipes dans différents groupes
+            sortedDepts.forEach(dept => {
+                const deptTeams = [...teamsByDept[dept]];
+                
+                // Mélanger les équipes du département pour plus d'équité
+                deptTeams.sort(() => Math.random() - 0.5);
+                
+                // Répartir chaque équipe du département
+                deptTeams.forEach(team => {
+                    // Trouver le groupe avec le moins d'équipes de ce département
+                    let bestGroup = currentGroup;
+                    let minDeptTeamsInGroup = Infinity;
+                    
+                    for (let i = 0; i < numGroups; i++) {
+                        const groupIndex = (currentGroup + i) % numGroups;
+                        const deptTeamsInGroup = distributedTeams[groupIndex].filter(t => 
+                            t.department === dept
+                        ).length;
+                        
+                        if (deptTeamsInGroup < minDeptTeamsInGroup) {
+                            minDeptTeamsInGroup = deptTeamsInGroup;
+                            bestGroup = groupIndex;
+                        }
+                    }
+                    
+                    // Ajouter l'équipe au groupe sélectionné
+                    distributedTeams[bestGroup].push(team);
+                    currentGroup = (bestGroup + 1) % numGroups;
+                });
+            });
+            
+            // Ajouter les équipes sans département de manière équilibrée
+            teamsWithoutDept.forEach((team, index) => {
+                const targetGroup = index % numGroups;
+                distributedTeams[targetGroup].push(team);
+            });
+            
+            // Aplatir la liste et mélanger légèrement pour l'ordre final
+            const finalDistribution = [];
+            const maxTeamsPerGroup = Math.max(...distributedTeams.map(g => g.length));
+            
+            for (let i = 0; i < maxTeamsPerGroup; i++) {
+                distributedTeams.forEach(group => {
+                    if (i < group.length) {
+                        finalDistribution.push(group[i]);
+                    }
+                });
+            }
+            
+            return finalDistribution;
+        }
+
+        function distributeTeamsToPools(teamList) {
+            // Réinitialiser les groupes
+            teams = {};
+            config.pools.forEach(pool => {
+                teams[pool] = [];
+            });
+            
+            // Répartir les équipes
+            const teamsPerPool = config.teamsPerPool;
+            let teamIndex = 0;
+            
+            for (let i = 0; i < teamsPerPool; i++) {
+                config.pools.forEach(pool => {
+                    if (teamIndex < teamList.length) {
+                        teams[pool].push({
+                            ...teamList[teamIndex],
+                            id: `${pool}${i + 1}`
+                        });
+                        teamIndex++;
+                    }
+                });
+            }
+            
+            // Afficher la répartition
+            renderGroupsDisplay();
+            showDistributionSummary();
+        }
+
+        function renderGroupsDisplay() {
+            const container = document.getElementById('groups-container');
+            container.innerHTML = '';
+            
+            config.pools.forEach(pool => {
+                const poolDiv = document.createElement('div');
+                poolDiv.className = 'border rounded-lg overflow-hidden';
+                poolDiv.innerHTML = `
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3">
+                        <h3 class="text-lg font-bold">Groupe ${pool}</h3>
+                    </div>
+                    <div class="p-3 space-y-2" id="teams-${pool}">
+                    </div>
+                `;
+                container.appendChild(poolDiv);
+                
+                const teamsContainer = document.getElementById(`teams-${pool}`);
+                (teams[pool] || []).forEach((team, idx) => {
+                    const teamDiv = document.createElement('div');
+                    teamDiv.className = 'flex items-center gap-3 p-2 border rounded';
+                    teamDiv.innerHTML = `
+                        <span class="text-sm font-medium w-6">${idx + 1}.</span>
+                        <span class="flex-1 text-sm">${team.name}</span>
+                        ${team.department ? `<span class="department-badge bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs">${team.department}</span>` : ''}
+                    `;
+                    teamsContainer.appendChild(teamDiv);
+                });
+            });
+            
+            // Afficher le container des groupes
+            document.getElementById('groups-display-container').classList.remove('hidden');
+        }
+
+        function showDistributionSummary() {
+            const deptDistribution = {};
+            
+            config.pools.forEach(pool => {
+                deptDistribution[pool] = {};
+                teams[pool].forEach(team => {
+                    if (team.department) {
+                        deptDistribution[pool][team.department] = (deptDistribution[pool][team.department] || 0) + 1;
+                    }
+                });
+            });
+            
+            let summary = "Répartition par département:\n\n";
+            const allDepts = new Set();
+            
+            config.pools.forEach(pool => {
+                Object.keys(deptDistribution[pool]).forEach(dept => allDepts.add(dept));
+            });
+            
+            if (allDepts.size > 0) {
+                allDepts.forEach(dept => {
+                    summary += `Département ${dept}:\n`;
+                    config.pools.forEach(pool => {
+                        const count = deptDistribution[pool][dept] || 0;
+                        summary += `  - Groupe ${pool}: ${count} équipe(s)\n`;
+                    });
+                    summary += "\n";
+                });
+            }
+            
+            setTimeout(() => {
+                alert(`Tirage au sort terminé !\n\n${summary}`);
+            }, 500);
+        }
+
+        function setupFloatingButtons() {
+            const printBtn = document.getElementById('print-btn');
+            const updateBtn = document.getElementById('floating-update-ranking');
+            
+            // Réduire l'opacité quand on scroll
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 100) {
+                    printBtn.classList.add('scrolled');
+                    updateBtn.classList.add('scrolled');
+                } else {
+                    printBtn.classList.remove('scrolled');
+                    updateBtn.classList.remove('scrolled');
+                }
+            });
+            
+            // Animation au clic pour le bouton d'impression
+            printBtn.addEventListener('click', function() {
+                this.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                    window.print();
+                    showNotification('Prêt pour l\'impression', 'info');
+                }, 150);
+            });
+            
+            // Animation au clic pour le bouton de mise à jour
+            updateBtn.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        }
+
+        function setCurrentView(view) {
+            currentView = view;
+            
+            // Mettre à jour les boutons de navigation
+            document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(btn => {
+                if (btn.getAttribute('data-view') === view) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Afficher la vue sélectionnée
+            document.querySelectorAll('.view').forEach(viewElement => {
+                viewElement.classList.add('hidden');
+            });
+            document.getElementById(`${view}-view`).classList.remove('hidden');
+
+            // Gérer l'affichage du bouton "Mettre à jour" volant
+            const floatingUpdateBtn = document.getElementById('floating-update-ranking');
+            if (view === 'final-ranking') {
+                floatingUpdateBtn.classList.remove('hidden');
+            } else {
+                floatingUpdateBtn.classList.add('hidden');
+            }
+
+            // Rendu spécifique à la vue
+            if (view === 'rankings') {
+                renderRankings();
+            } else if (view === 'final-ranking') {
+                renderFinalRanking();
+            } else if (view === 'elimination') {
+                renderEliminationMatches();
+            }
+
+            // Mettre à jour l'affichage de la date
+            updateTournamentDateDisplay();
+        }
+
+        function updateTournamentDateDisplay() {
+            const dateElement = document.getElementById('tournament-date-display');
+            const eliminationDateElement = document.getElementById('elimination-date-display');
+            
+            if (dateElement && eliminationDateElement) {
+                const date = new Date(config.tournamentStartDate);
+                const formattedDate = date.toLocaleDateString('fr-FR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                dateElement.textContent = formattedDate;
+                eliminationDateElement.textContent = formattedDate;
+            }
+        }
+
+        // FONCTIONS POUR LES DATES DU TOURNOI
+
+        function renderDailySchedule() {
+            const container = document.getElementById('daily-schedule-container');
+            container.innerHTML = '';
+            
+            const days = config.tournamentDays || 1;
+            const startDate = new Date(config.tournamentStartDate);
+            
+            for (let i = 0; i < days; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                const dateString = currentDate.toISOString().split('T')[0];
+                const formattedDate = currentDate.toLocaleDateString('fr-FR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'flex flex-col md:flex-row items-start md:items-center gap-4 p-3 border rounded-lg bg-gray-50';
+                dayDiv.innerHTML = `
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium mb-1">Jour ${i + 1}</label>
+                        <div class="font-semibold">${formattedDate}</div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium mb-1">Horaires</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="time" value="${config.dailySchedule[i]?.startTime || config.startTime}" 
+                                   class="daily-time-input day-${i} start w-full px-2 py-1 border rounded text-sm">
+                            <input type="time" value="${config.dailySchedule[i]?.endTime || config.endTime}" 
+                                   class="daily-time-input day-${i} end w-full px-2 py-1 border rounded text-sm">
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(dayDiv);
+                
+                // Écouteurs d'événements pour les horaires journaliers
+                const startInput = dayDiv.querySelector('.daily-time-input.start');
+                const endInput = dayDiv.querySelector('.daily-time-input.end');
+                
+                startInput.addEventListener('change', function() {
+                    if (!config.dailySchedule[i]) {
+                        config.dailySchedule[i] = {};
+                    }
+                    config.dailySchedule[i].startTime = this.value;
+                    showNotification(`Heure de début du jour ${i + 1} mise à jour: ${this.value}`, 'info');
+                });
+                
+                endInput.addEventListener('change', function() {
+                    if (!config.dailySchedule[i]) {
+                        config.dailySchedule[i] = {};
+                    }
+                    config.dailySchedule[i].endTime = this.value;
+                    showNotification(`Heure de fin du jour ${i + 1} mise à jour: ${this.value}`, 'info');
+                });
+            }
+        }
+
+        // FONCTIONS POUR LA SAUVEGARDE ROBUSTE
+
+        function startAutoSave() {
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+            }
+            
+            autoSaveInterval = setInterval(() => {
+                if (autoSaveEnabled) {
+                    autoSave();
+                }
+            }, 30000); // Sauvegarde automatique toutes les 30 secondes
+        }
+
+        function stopAutoSave() {
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+                autoSaveInterval = null;
+            }
+        }
+
+        // Debounce pour éviter les sauvegardes trop fréquentes
+        let autoSaveTimeout;
+        function debouncedAutoSave() {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                autoSave();
+            }, 2000); // 2 secondes de délai
+        }
+
+        function autoSave() {
+            try {
+                saveToLocalStorage();
+                showAutoSaveIndicator();
+            } catch (error) {
+                console.error('Erreur lors de la sauvegarde automatique:', error);
+                showSaveIndicator('Erreur de sauvegarde automatique', 'error');
+            }
+        }
+
+        function saveToLocalStorage() {
+            const tournamentData = {
+                config,
+                teams,
+                timeSlots,
+                breaks,
+                groupMatches,
+                eliminationMatches,
+                matchDurations,
+                finalRanking,
+                timerState: {
+                    seconds: timerSeconds,
+                    running: timerRunning,
+                    duration: timerDuration,
+                    finished: timerFinished
+                },
+                timestamp: new Date().toISOString(),
+                version: '1.0',
+                // NOUVEAU: Sauvegarde des équipes inscrites
+                allTeams: allTeams
+            };
+            
+            localStorage.setItem('tournamentData', JSON.stringify(tournamentData));
+            lastSaveTime = new Date();
+            updateLastSaveTime();
+            
+            return true;
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem('tournamentData');
+                if (savedData) {
+                    const tournamentData = JSON.parse(savedData);
+                    
+                    // Vérifier la version pour la compatibilité
+                    if (tournamentData.version === '1.0') {
+                        config = tournamentData.config || config;
+                        teams = tournamentData.teams || teams;
+                        timeSlots = tournamentData.timeSlots || timeSlots;
+                        breaks = tournamentData.breaks || breaks;
+                        groupMatches = tournamentData.groupMatches || [];
+                        eliminationMatches = tournamentData.eliminationMatches || [];
+                        matchDurations = tournamentData.matchDurations || {};
+                        finalRanking = tournamentData.finalRanking || [];
+                        lastSaveTime = tournamentData.timestamp ? new Date(tournamentData.timestamp) : null;
+                        
+                        // NOUVEAU: Chargement des équipes inscrites
+                        allTeams = tournamentData.allTeams || [];
+                        
+                        // Restaurer l'état du chronomètre UNIQUE
+                        if (tournamentData.timerState) {
+                            timerSeconds = tournamentData.timerState.seconds || (17 * 60);
+                            timerRunning = false; // Toujours repartir en pause au chargement
+                            timerDuration = tournamentData.timerState.duration || (17 * 60);
+                            timerFinished = tournamentData.timerState.finished || false;
+                            
+                            // Mettre à jour l'interface du chronomètre
+                            document.getElementById('timer-minutes').value = Math.floor(timerDuration / 60);
+                            updateTimerDisplay();
+                            updateTimerStatus();
+                            
+                            // Appliquer les styles appropriés
+                            const timer = document.getElementById('floating-timer');
+                            timer.classList.remove('timer-running', 'timer-paused', 'timer-finished');
+                            if (timerFinished) {
+                                timer.classList.add('timer-finished');
+                            } else if (timerRunning) {
+                                timer.classList.add('timer-running');
+                            } else if (timerSeconds < timerDuration) {
+                                timer.classList.add('timer-paused');
+                            }
+                        }
+                        
+                        showNotification('Données chargées depuis la sauvegarde automatique', 'success');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement depuis le stockage local:', error);
+            }
+            return false;
+        }
+
+        function hasUnsavedChanges() {
+            // Cette fonction pourrait être améliorée pour détecter les changements non sauvegardés
+            return true; // Pour l'instant, on considère qu'il y a toujours des changements
+        }
+
+        function showAutoSaveIndicator() {
+            const indicator = document.getElementById('auto-save-indicator');
+            indicator.classList.remove('hidden');
+            
+            // Animation de pulsation
+            indicator.classList.add('animate-pulse');
+            setTimeout(() => {
+                indicator.classList.remove('animate-pulse');
+            }, 1000);
+            
+            // Masquer après 3 secondes
+            setTimeout(() => {
+                indicator.classList.add('hidden');
+            }, 3000);
+        }
+
+        function showSaveIndicator(message, type = 'success') {
+            const indicator = document.getElementById('save-indicator');
+            indicator.textContent = message;
+            indicator.className = `save-indicator ${type === 'success' ? 'save-success' : 'save-error'}`;
+            indicator.classList.remove('hidden');
+            
+            // Masquer après 3 secondes
+            setTimeout(() => {
+                indicator.classList.add('hidden');
+            }, 3000);
+        }
+
+        function updateLastSaveTime() {
+            const element = document.getElementById('last-save-time');
+            if (lastSaveTime) {
+                element.textContent = lastSaveTime.toLocaleTimeString('fr-FR');
+            } else {
+                element.textContent = 'Jamais';
+            }
+        }
+
+        // FONCTIONS POUR LA MISE À JOUR AUTOMATIQUE
+
+        function updateRankingsAutomatically() {
+            let needsUpdate = false;
+            
+            // Vérifier s'il y a des scores à traiter
+            const allMatches = [...groupMatches, ...eliminationMatches];
+            const hasScores = allMatches.some(match => 
+                (match.score1 !== '' && match.score2 !== '') || 
+                (match.penalty1 !== '' && match.penalty2 !== '')
+            );
+            
+            if (hasScores) {
+                // Mettre à jour les classements de poule
+                renderRankings();
+                
+                // Mettre à jour les brackets d'élimination
+                updateEliminationBrackets();
+                
+                // Mettre à jour le classement final
+                calculateFinalRanking();
+                
+                needsUpdate = true;
+            }
+            
+            // Sauvegarder automatiquement si des changements ont été détectés
+            if (needsUpdate && autoSaveEnabled) {
+                debouncedAutoSave();
+                showAutoUpdateIndicator();
+            }
+            
+            return needsUpdate;
+        }
+
+        function showAutoUpdateIndicator() {
+            const indicator = document.getElementById('auto-update-indicator');
+            indicator.classList.remove('hidden');
+            
+            // Masquer après 2 secondes
+            setTimeout(() => {
+                indicator.classList.add('hidden');
+            }, 2000);
+        }
+
+        // FONCTIONS PRINCIPALES DE L'APPLICATION
+
+        function calculateAllTimeSlots() {
+            const slots = [];
+            let currentTime = new Date(`2000-01-01T${config.startTime}`);
+            const endTime = new Date(`2000-01-01T${config.endTime}`);
+            
+            let slotIndex = 0;
+            const maxSlots = 50;
+            
+            // Trier les pauses par afterSlot
+            const sortedBreaks = [...breaks].sort((a, b) => a.afterSlot - b.afterSlot);
+            
+            for (let i = 0; i < maxSlots; i++) {
+                if (currentTime >= endTime) break;
+                
+                const timeString = currentTime.toTimeString().substring(0, 5);
+                slots.push(timeString);
+                
+                // Vérifier s'il y a une pause après ce créneau
+                const currentBreak = sortedBreaks.find(b => b.afterSlot === slotIndex);
+                if (currentBreak) {
+                    // Ajouter la durée de la pause
+                    currentTime = new Date(currentTime.getTime() + currentBreak.duration * 60000);
+                }
+                
+                // Passer au créneau suivant avec la durée du match
+                const matchDuration = matchDurations[slotIndex] || config.matchDuration;
+                currentTime = new Date(currentTime.getTime() + matchDuration * 60000);
+                slotIndex++;
+                
+                // Vérifier à nouveau si on dépasse l'heure de fin après l'ajout du match
+                if (currentTime >= endTime) break;
+            }
+            
+            timeSlots = slots;
+            renderTimeSlots();
+            updateStatistics();
+        }
+
+        function generateDefaultGroupMatches() {
+            const matches = [];
+            
+            const groupSchedule = [
+                { time: '9H00', matches: [
+                    { poule: 'A', match: 'A1 – A2', terrain: 'A' }, { poule: 'B', match: 'B1 – B2', terrain: 'B' },
+                    { poule: 'C', match: 'C1 – C2', terrain: 'C' }, { poule: 'D', match: 'D1 – D2', terrain: 'D' }
+                ]},
+                { time: '9H17', matches: [
+                    { poule: 'A', match: 'A3 – A4', terrain: 'A' }, { poule: 'B', match: 'B3 – B4', terrain: 'B' },
+                    { poule: 'C', match: 'C3 – C4', terrain: 'C' }, { poule: 'D', match: 'D3 – D4', terrain: 'D' }
+                ]},
+                { time: '9H34', matches: [
+                    { poule: 'A', match: 'A5 – A6', terrain: 'A' }, { poule: 'B', match: 'B5 – B6', terrain: 'B' },
+                    { poule: 'C', match: 'C5 – C6', terrain: 'C' }, { poule: 'D', match: 'D5 – D6', terrain: 'D' }
+                ]},
+                { time: '9H51', matches: [
+                    { poule: 'A', match: 'A3 – A1', terrain: 'C' }, { poule: 'B', match: 'B3 – B1', terrain: 'D' },
+                    { poule: 'C', match: 'C3 – C1', terrain: 'A' }, { poule: 'D', match: 'D3 – D1', terrain: 'B' }
+                ]},
+                { time: '10H08', matches: [
+                    { poule: 'A', match: 'A2 – A5', terrain: 'C' }, { poule: 'B', match: 'B2 – B5', terrain: 'D' },
+                    { poule: 'C', match: 'C2 – C5', terrain: 'A' }, { poule: 'D', match: 'D2 – D5', terrain: 'B' }
+                ]},
+                { time: '10H25', matches: [
+                    { poule: 'A', match: 'A6 – A4', terrain: 'C' }, { poule: 'B', match: 'B6 – B4', terrain: 'D' },
+                    { poule: 'C', match: 'C6 – C4', terrain: 'A' }, { poule: 'D', match: 'D6 – D4', terrain: 'B' }
+                ]},
+                { time: '10H42', matches: [
+                    { poule: 'A', match: 'A5 – A3', terrain: 'B' }, { poule: 'B', match: 'B5 – B3', terrain: 'A' },
+                    { poule: 'C', match: 'C5 – C3', terrain: 'D' }, { poule: 'D', match: 'D5 – D3', terrain: 'C' }
+                ]},
+                { time: '10H59', matches: [
+                    { poule: 'A', match: 'A6 – A2', terrain: 'B' }, { poule: 'B', match: 'B6 – B2', terrain: 'A' },
+                    { poule: 'C', match: 'C6 – C2', terrain: 'D' }, { poule: 'D', match: 'D6 – D2', terrain: 'C' }
+                ]},
+                { time: '11H16', matches: [
+                    { poule: 'A', match: 'A4 – A1', terrain: 'B' }, { poule: 'B', match: 'B4 – B1', terrain: 'A' },
+                    { poule: 'C', match: 'C4 – C1', terrain: 'D' }, { poule: 'D', match: 'D4 – D1', terrain: 'C' }
+                ]},
+                { time: '11H33', matches: [
+                    { poule: 'A', match: 'A3 – A6', terrain: 'D' }, { poule: 'B', match: 'B3 – B6', terrain: 'C' },
+                    { poule: 'C', match: 'C3 – C6', terrain: 'B' }, { poule: 'D', match: 'D3 – D6', terrain: 'A' }
+                ]},
+                { time: '11H50', matches: [
+                    { poule: 'A', match: 'A2 – A4', terrain: 'D' }, { poule: 'B', match: 'B2 – B4', terrain: 'C' },
+                    { poule: 'C', match: 'C2 – C4', terrain: 'B' }, { poule: 'D', match: 'D2 – D4', terrain: 'A' }
+                ]},
+                { time: '12H07', matches: [
+                    { poule: 'A', match: 'A1 – A5', terrain: 'D' }, { poule: 'B', match: 'B1 – B5', terrain: 'C' },
+                    { poule: 'C', match: 'C1 – C5', terrain: 'B' }, { poule: 'D', match: 'D1 – D5', terrain: 'A' }
+                ]},
+                { time: '13h55', matches: [
+                    { poule: 'A', match: 'A3 – A2', terrain: 'C' }, { poule: 'B', match: 'B3 – B2', terrain: 'A' },
+                    { poule: 'C', match: 'C3 – C2', terrain: 'D' }, { poule: 'D', match: 'D3 – D2', terrain: 'B' }
+                ]},
+                { time: '14h12', matches: [
+                    { poule: 'A', match: 'A6 – A1', terrain: 'A' }, { poule: 'B', match: 'B6 – B1', terrain: 'B' },
+                    { poule: 'C', match: 'C6 – C1', terrain: 'C' }, { poule: 'D', match: 'D6 – D1', terrain: 'D' }
+                ]},
+                { time: '14h29', matches: [
+                    { poule: 'A', match: 'A5 – A4', terrain: 'B' }, { poule: 'B', match: 'B5 – B4', terrain: 'D' },
+                    { poule: 'C', match: 'C5 – C4', terrain: 'A' }, { poule: 'D', match: 'D5 – D4', terrain: 'C' }
+                ]}
+            ];
+
+            const timeToSlotIndex = {
+                '9H00': 0, '9H17': 1, '9H34': 2, '9H51': 3, '10H08': 4, '10H25': 5,
+                '10H42': 6, '10H59': 7, '11H16': 8, '11H33': 9, '11H50': 10, '12H07': 11,
+                '13h55': 12, '14h12': 13, '14h29': 14
+            };
+
+            groupSchedule.forEach((slot, slotIndex) => {
+                slot.matches.forEach(matchData => {
+                    const [team1, team2] = matchData.match.split(' – ');
+                    matches.push({
+                        id: `group-${slotIndex}-${matchData.terrain}-${Math.random().toString(36).substr(2, 9)}`,
+                        slotIndex: timeToSlotIndex[slot.time],
+                        pool: matchData.poule,
+                        team1: team1,
+                        team2: team2,
+                        field: matchData.terrain,
+                        score1: '',
+                        score2: '',
+                        penalty1: '',
+                        penalty2: '',
+                        duration: config.matchDuration
+                    });
+                });
+            });
+
+            groupMatches = matches;
+            renderGroupMatches();
+        }
+
+        function generateDefaultEliminationMatches() {
+            const matches = [];
+            
+            const eliminationSchedule = [
+                // Huitièmes de finale - Matchs 1 à 12
+                { matchNumber: 1, time: '15h03', phase: 'Huitièmes', match: '5°A – 6°C', terrain: 'A' },
+                { matchNumber: 2, time: '15h03', phase: 'Huitièmes', match: '5°B – 6°D', terrain: 'B' },
+                { matchNumber: 3, time: '15h03', phase: 'Huitièmes', match: '5°C – 6°B', terrain: 'C' },
+                { matchNumber: 4, time: '15h03', phase: 'Huitièmes', match: '5°D – 6°A', terrain: 'D' },
+                { matchNumber: 5, time: '15h20', phase: 'Huitièmes', match: '3°A – 4°C', terrain: 'A' },
+                { matchNumber: 6, time: '15h20', phase: 'Huitièmes', match: '3°B – 4°D', terrain: 'B' },
+                { matchNumber: 7, time: '15h20', phase: 'Huitièmes', match: '3°C – 4°B', terrain: 'C' },
+                { matchNumber: 8, time: '15h20', phase: 'Huitièmes', match: '3°D – 4°A', terrain: 'D' },
+                { matchNumber: 9, time: '15h37', phase: 'Huitièmes', match: '1°A – 2°C', terrain: 'A' },
+                { matchNumber: 10, time: '15h37', phase: 'Huitièmes', match: '1°B – 2°D', terrain: 'B' },
+                { matchNumber: 11, time: '15h37', phase: 'Huitièmes', match: '1°C – 2°B', terrain: 'C' },
+                { matchNumber: 12, time: '15h37', phase: 'Huitièmes', match: '1°D – 2°A', terrain: 'D' },
+                
+                // Quarts de finale - Matchs 13 à 24
+                { matchNumber: 13, time: '16h12', phase: 'Quarts V', match: 'V1 – V2', terrain: 'A' },
+                { matchNumber: 14, time: '16h12', phase: 'Quarts V', match: 'V3 – V4', terrain: 'B' },
+                { matchNumber: 15, time: '16h12', phase: 'Quarts P', match: 'P1 – P2', terrain: 'C' },
+                { matchNumber: 16, time: '16h12', phase: 'Quarts P', match: 'P3 – P4', terrain: 'D' },
+                { matchNumber: 17, time: '16h29', phase: 'Quarts V', match: 'V5 – V6', terrain: 'A' },
+                { matchNumber: 18, time: '16h29', phase: 'Quarts V', match: 'V7 – V8', terrain: 'B' },
+                { matchNumber: 19, time: '16h29', phase: 'Quarts P', match: 'P5 – P6', terrain: 'C' },
+                { matchNumber: 20, time: '16h29', phase: 'Quarts P', match: 'P7 – P8', terrain: 'D' },
+                { matchNumber: 21, time: '16h46', phase: 'Quarts V', match: 'V9 – V10', terrain: 'A' },
+                { matchNumber: 22, time: '16h46', phase: 'Quarts V', match: 'V11 – V12', terrain: 'B' },
+                { matchNumber: 23, time: '16h46', phase: 'Quarts P', match: 'P9 – P10', terrain: 'C' },
+                { matchNumber: 24, time: '16h46', phase: 'Quarts P', match: 'P11 – P12', terrain: 'D' },
+                
+                // Matchs pour les places 23°-24° et 15°-16° - Matchs 25 à 28
+                { matchNumber: 25, time: '17h01', phase: '17°-18° place', match: 'V13 – V14', terrain: 'A' },
+                { matchNumber: 26, time: '17h01', phase: '19°-20° place', match: 'P13 – P14', terrain: 'B' },		
+                { matchNumber: 27, time: '17h01', phase: '21°-22° place', match: 'V15 – V16', terrain: 'C' },
+                { matchNumber: 28, time: '17h01', phase: '23°-24° place', match: 'P15 – P16', terrain: 'D' },
+
+                // Matchs pour les autres places - Matchs 29 à 32
+                { matchNumber: 32, time: '17h18', phase: '9°-10° place', match: 'V17 – V18', terrain: 'A' },
+                { matchNumber: 31, time: '17h18', phase: '11°-12° place', match: 'P17 – P18', terrain: 'B' },		             
+                { matchNumber: 30, time: '17h18', phase: '13°-14° place', match: 'V19 – V20', terrain: 'C' },                               
+                { matchNumber: 29, time: '17h18', phase: '15°-16° place', match: 'P19 – P20', terrain: 'D' },
+                
+                // Matchs pour les places 5°-8° - Matchs 33 à 35
+                { matchNumber: 35, time: '17h46', phase: '3°-4° place', match: 'P21 – P22', terrain: 'B' },
+                { matchNumber: 34, time: '17h46', phase: '5°-6° place', match: 'V23 – V24', terrain: 'C' },
+                { matchNumber: 33, time: '17h46', phase: '7°-8° place', match: 'P23 – P24', terrain: 'D' },
+                
+                // Finale - Match 36
+                { matchNumber: 36, time: '18h03', phase: 'FINALE', match: 'V21 – V22', terrain: 'A' }
+            ];
+
+            const timeToSlotIndex = {
+                '15h03': 15, '15h20': 16, '15h37': 17,
+                '16h12': 18, '16h29': 19, '16h46': 20,
+                '17h01': 21, '17h18': 22,
+                '17h46': 23, '18h03': 24
+            };
+
+            eliminationSchedule.forEach(slot => {
+                const [team1, team2] = slot.match.split(' – ');
+                matches.push({
+                    id: `elim-${slot.matchNumber}-${slot.terrain}-${Math.random().toString(36).substr(2, 9)}`,
+                    slotIndex: timeToSlotIndex[slot.time],
+                    matchNumber: slot.matchNumber,
+                    label: slot.phase,
+                    team1: team1,
+                    team2: team2,
+                    field: slot.terrain,
+                    score1: '',
+                    score2: '',
+                    penalty1: '',
+                    penalty2: '',
+                    duration: config.matchDuration,
+                    originalPhase: slot.phase
+                });
+            });
+
+            eliminationMatches = matches;
+            renderEliminationMatches();
+        }
+
+        // FONCTIONS DE RENDU
+
+        function renderGroupMatches() {
+            const container = document.getElementById('group-matches-container');
+            container.innerHTML = '';
+            
+            const matchesBySlot = {};
+            groupMatches.forEach(match => {
+                if (!matchesBySlot[match.slotIndex]) {
+                    matchesBySlot[match.slotIndex] = [];
+                }
+                matchesBySlot[match.slotIndex].push(match);
+            });
+
+            const sortedSlots = Object.keys(matchesBySlot).sort((a, b) => parseInt(a) - parseInt(b));
+
+            sortedSlots.forEach(slotIndex => {
+                const slotMatches = matchesBySlot[slotIndex];
+                const hasBreakAfter = breaks.some(b => b.afterSlot === parseInt(slotIndex));
+                const breakInfo = breaks.find(b => b.afterSlot === parseInt(slotIndex));
+                const slotDuration = matchDurations[slotIndex] || config.matchDuration;
+
+                const slotDiv = document.createElement('div');
+                
+                // Créneau horaire - BANDEAU RÉDUIT
+                const timeSlotDiv = document.createElement('div');
+                timeSlotDiv.className = 'time-slot-header';
+                timeSlotDiv.innerHTML = `
+                    <div class="time-info">
+                        <select class="time-slot-select text-lg font-bold bg-white border rounded px-3 py-1">
+                            ${timeSlots.map((time, index) => 
+                                `<option value="${index}" ${index == slotIndex ? 'selected' : ''}>${time}</option>`
+                            ).join('')}
+                        </select>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm">Durée:</span>
+                            <input type="number" min="5" max="30" value="${slotDuration}" class="match-duration-input w-16 px-2 py-1 border rounded text-sm">
+                            <span class="text-sm">min</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="add-group-match btn btn-success no-print btn-super-compact">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(timeSlotDiv);
+                
+                // Écouteurs d'événements pour le créneau
+                const timeSlotSelect = timeSlotDiv.querySelector('.time-slot-select');
+                timeSlotSelect.addEventListener('change', function() {
+                    const newSlotIndex = parseInt(this.value);
+                    groupMatches = groupMatches.map(match => 
+                        match.slotIndex === parseInt(slotIndex) 
+                            ? { ...match, slotIndex: newSlotIndex }
+                            : match
+                    );
+                    renderGroupMatches();
+                    showNotification(`Créneau horaire déplacé vers ${timeSlots[newSlotIndex]}`, 'info');
+                });
+                
+                const durationInput = timeSlotDiv.querySelector('.match-duration-input');
+                durationInput.addEventListener('change', function() {
+                    const newDuration = parseInt(this.value);
+                    matchDurations[slotIndex] = newDuration;
+                    groupMatches = groupMatches.map(match =>
+                        match.slotIndex === parseInt(slotIndex)
+                            ? { ...match, duration: newDuration }
+                            : match
+                    );
+                    updateStatistics();
+                    showNotification(`Durée du créneau mise à jour: ${newDuration}min`, 'info');
+                });
+                
+                const addButton = timeSlotDiv.querySelector('.add-group-match');
+                addButton.addEventListener('click', function() {
+                    const newMatch = {
+                        id: `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        slotIndex: parseInt(slotIndex),
+                        pool: config.pools[0],
+                        team1: '',
+                        team2: '',
+                        field: config.fields[0],
+                        score1: '',
+                        score2: '',
+                        penalty1: '',
+                        penalty2: '',
+                        duration: slotDuration
+                    };
+                    groupMatches.push(newMatch);
+                    renderGroupMatches();
+                    showNotification('Nouveau match ajouté', 'success');
+                });
+                
+                // Rendu des matchs du créneau
+                const matchesContainer = document.createElement('div');
+                matchesContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6';
+                matchesContainer.id = `matches-slot-${slotIndex}`;
+                container.appendChild(matchesContainer);
+                
+                slotMatches.forEach(match => {
+                    const matchDiv = document.createElement('div');
+                    matchDiv.className = 'match-card';
+                    matchDiv.innerHTML = `
+                        <div class="flex justify-between mb-2">
+                            <select class="pool-select text-sm px-2 py-1 border rounded">
+                                ${config.pools.map(p => 
+                                    `<option value="${p}" ${p === match.pool ? 'selected' : ''}>Poule ${p}</option>`
+                                ).join('')}
+                            </select>
+                            <select class="field-select text-sm px-2 py-1 border rounded">
+                                ${config.fields.map(f => 
+                                    `<option value="${f}" ${f === match.field ? 'selected' : ''}>T.${f}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <select class="team1-select flex-1 text-sm px-2 py-1 border rounded">
+                                    <option value="">Équipe 1</option>
+                                    ${(teams[match.pool] || []).map(t => 
+                                        `<option value="${t.id}" ${t.id === match.team1 ? 'selected' : ''}>${t.name}</option>`
+                                    ).join('')}
+                                </select>
+                                <input type="number" min="0" value="${match.score1}" class="score1-input w-12 text-center border rounded">
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <select class="team2-select flex-1 text-sm px-2 py-1 border rounded">
+                                    <option value="">Équipe 2</option>
+                                    ${(teams[match.pool] || []).map(t => 
+                                        `<option value="${t.id}" ${t.id === match.team2 ? 'selected' : ''}>${t.name}</option>`
+                                    ).join('')}
+                                </select>
+                                <input type="number" min="0" value="${match.score2}" class="score2-input w-12 text-center border rounded">
+                            </div>
+                        </div>
+                        
+                        <div class="border-t pt-2 mt-2">
+                            <div class="text-xs text-gray-600 mb-1 text-center">Tirs au but (départage uniquement)</div>
+                            <div class="flex items-center gap-2 justify-center">
+                                <input type="number" min="0" value="${match.penalty1}" class="penalty1-input w-10 text-center border rounded text-sm" placeholder="0">
+                                <span class="text-xs">-</span>
+                                <input type="number" min="0" value="${match.penalty2}" class="penalty2-input w-10 text-center border rounded text-sm" placeholder="0">
+                            </div>
+                        </div>
+                        
+                        <button class="delete-group-match mt-2 w-full py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs no-print">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    `;
+                    
+                    matchesContainer.appendChild(matchDiv);
+                    
+                    // Écouteurs d'événements pour le match
+                    const poolSelect = matchDiv.querySelector('.pool-select');
+                    poolSelect.addEventListener('change', function() {
+                        match.pool = this.value;
+                        renderGroupMatches();
+                        showNotification(`Match déplacé vers la poule ${this.value}`, 'info');
+                    });
+                    
+                    const fieldSelect = matchDiv.querySelector('.field-select');
+                    fieldSelect.addEventListener('change', function() {
+                        match.field = this.value;
+                        showNotification(`Terrain changé: ${this.value}`, 'info');
+                    });
+                    
+                    const team1Select = matchDiv.querySelector('.team1-select');
+                    team1Select.addEventListener('change', function() {
+                        match.team1 = this.value;
+                        showNotification('Équipe 1 mise à jour', 'info');
+                    });
+                    
+                    const team2Select = matchDiv.querySelector('.team2-select');
+                    team2Select.addEventListener('change', function() {
+                        match.team2 = this.value;
+                        showNotification('Équipe 2 mise à jour', 'info');
+                    });
+                    
+                    const score1Input = matchDiv.querySelector('.score1-input');
+                    score1Input.addEventListener('change', function() {
+                        match.score1 = this.value;
+                        showNotification('Score mis à jour', 'info');
+                    });
+                    
+                    const score2Input = matchDiv.querySelector('.score2-input');
+                    score2Input.addEventListener('change', function() {
+                        match.score2 = this.value;
+                        showNotification('Score mis à jour', 'info');
+                    });
+                    
+                    const penalty1Input = matchDiv.querySelector('.penalty1-input');
+                    penalty1Input.addEventListener('change', function() {
+                        match.penalty1 = this.value;
+                        showNotification('Tirs au but mis à jour', 'info');
+                    });
+                    
+                    const penalty2Input = matchDiv.querySelector('.penalty2-input');
+                    penalty2Input.addEventListener('change', function() {
+                        match.penalty2 = this.value;
+                        showNotification('Tirs au but mis à jour', 'info');
+                    });
+                    
+                    const deleteButton = matchDiv.querySelector('.delete-group-match');
+                    deleteButton.addEventListener('click', function() {
+                        groupMatches = groupMatches.filter(m => m.id !== match.id);
+                        renderGroupMatches();
+                        showNotification('Match supprimé', 'warning');
+                    });
+                });
+                
+                // Pause après le créneau
+                if (hasBreakAfter) {
+                    const breakDiv = document.createElement('div');
+                    breakDiv.className = 'bg-yellow-100 border-l-4 border-yellow-500 p-4 my-2 rounded';
+                    breakDiv.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-bold text-yellow-800">⏸️ ${breakInfo.label}</p>
+                                <p class="text-sm text-yellow-700">Durée: ${breakInfo.duration} minutes</p>
+                            </div>
+                            <div class="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
+                                Après le créneau ${parseInt(slotIndex) + 1}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(breakDiv);
+                }
+            });
+        }
+
+        function calculateRankings() {
+            const rankings = {};
+            
+            config.pools.forEach(pool => {
+                const poolTeams = teams[pool] || [];
+                const stats = {};
+                
+                // Initialiser les statistiques
+                poolTeams.forEach(team => {
+                    stats[team.id] = {
+                        name: team.name,
+                        played: 0,
+                        won: 0,
+                        drawn: 0,
+                        lost: 0,
+                        goalsFor: 0,
+                        goalsAgainst: 0,
+                        points: 0,
+                        directMatches: {},
+                        tieGroup: 0,
+                        penaltyWins: 0,
+                        penaltyLosses: 0
+                    };
+                });
+
+                // Remplir les statistiques depuis les matchs de poule
+                groupMatches.forEach(match => {
+                    if (match.pool === pool && match.score1 !== '' && match.score2 !== '') {
+                        const score1 = parseInt(match.score1);
+                        const score2 = parseInt(match.score2);
+                        const penalty1 = parseInt(match.penalty1) || 0;
+                        const penalty2 = parseInt(match.penalty2) || 0;
+                        
+                        if (!isNaN(score1) && !isNaN(score2)) {
+                            const team1 = match.team1;
+                            const team2 = match.team2;
+                            
+                            if (stats[team1] && stats[team2]) {
+                                stats[team1].played++;
+                                stats[team2].played++;
+                                stats[team1].goalsFor += score1;
+                                stats[team1].goalsAgainst += score2;
+                                stats[team2].goalsFor += score2;
+                                stats[team2].goalsAgainst += score1;
+
+                                if (score1 > score2) {
+                                    stats[team1].won++;
+                                    stats[team1].points += 3;
+                                    stats[team2].lost++;
+                                } else if (score1 < score2) {
+                                    stats[team2].won++;
+                                    stats[team2].points += 3;
+                                    stats[team1].lost++;
+                                } else {
+                                    // Match nul
+                                    stats[team1].drawn++;
+                                    stats[team2].drawn++;
+                                    stats[team1].points += 1;
+                                    stats[team2].points += 1;
+                                    
+                                    // Gestion des tirs au but pour le départage
+                                    if (penalty1 > penalty2) {
+                                        stats[team1].penaltyWins++;
+                                        stats[team2].penaltyLosses++;
+                                    } else if (penalty1 < penalty2) {
+                                        stats[team2].penaltyWins++;
+                                        stats[team1].penaltyLosses++;
+                                    }
+                                }
+
+                                // Stocker les résultats des confrontations directes
+                                if (!stats[team1].directMatches[team2]) {
+                                    stats[team1].directMatches[team2] = { for: 0, against: 0 };
+                                    stats[team2].directMatches[team1] = { for: 0, against: 0 };
+                                }
+                                stats[team1].directMatches[team2].for += score1;
+                                stats[team1].directMatches[team2].against += score2;
+                                stats[team2].directMatches[team1].for += score2;
+                                stats[team2].directMatches[team1].against += score1;
+                            }
+                        }
+                    }
+                });
+
+                // Fonction pour calculer le goal average particulier entre deux équipes
+                const calculateDirectGoalAverage = (teamA, teamB) => {
+                    const matchA = stats[teamA].directMatches[teamB];
+                    const matchB = stats[teamB].directMatches[teamA];
+                    
+                    if (!matchA || !matchB) return 0;
+                    
+                    const diffA = matchA.for - matchA.against;
+                    return diffA;
+                };
+
+                // Fonction pour comparer deux équipes selon les critères
+                const compareTeams = (teamA, teamB) => {
+                    // 1. Points
+                    if (stats[teamB].points !== stats[teamA].points) {
+                        return stats[teamB].points - stats[teamA].points;
+                    }
+                    
+                    // 2. Goal average particulier (confrontations directes)
+                    const directGA = calculateDirectGoalAverage(teamA, teamB);
+                    if (directGA !== 0) {
+                        return directGA;
+                    }
+                    
+                    // 3. Goal average général
+                    const diffA = stats[teamA].goalsFor - stats[teamA].goalsAgainst;
+                    const diffB = stats[teamB].goalsFor - stats[teamB].goalsAgainst;
+                    if (diffB !== diffA) {
+                        return diffB - diffA;
+                    }
+                    
+                    // 4. Meilleure attaque
+                    if (stats[teamB].goalsFor !== stats[teamA].goalsFor) {
+                        return stats[teamB].goalsFor - stats[teamA].goalsFor;
+                    }
+                    
+                    // 5. Tirs au but (nombre de victoires aux tirs au but)
+                    if (stats[teamB].penaltyWins !== stats[teamA].penaltyWins) {
+                        return stats[teamB].penaltyWins - stats[teamA].penaltyWins;
+                    }
+                    
+                    return 0;
+                };
+
+                // Trier les équipes
+                const sortedTeams = Object.entries(stats).sort(([idA], [idB]) => 
+                    compareTeams(idA, idB)
+                );
+
+                // Identifier les groupes d'égalité pour le color coding
+                let currentTieGroup = 0;
+                
+                const teamsWithTieGroups = sortedTeams.map(([id, teamStats], index) => {
+                    if (index === 0) {
+                        currentTieGroup = 1;
+                    } else {
+                        const prevTeam = sortedTeams[index - 1][1];
+                        // Vérifier l'égalité sur tous les critères
+                        if (teamStats.points === prevTeam.points &&
+                            (teamStats.goalsFor - teamStats.goalsAgainst) === (prevTeam.goalsFor - prevTeam.goalsAgainst) &&
+                            teamStats.goalsFor === prevTeam.goalsFor &&
+                            teamStats.penaltyWins === prevTeam.penaltyWins) {
+                            // Même groupe d'égalité que l'équipe précédente
+                        } else {
+                            currentTieGroup++;
+                        }
+                    }
+                    
+                    return [id, { ...teamStats, tieGroup: currentTieGroup }];
+                });
+
+                rankings[pool] = teamsWithTieGroups;
+            });
+
+            return rankings;
+        }
+
+        function renderRankings() {
+            const rankings = calculateRankings();
+            const container = document.getElementById('rankings-container');
+            container.innerHTML = '';
+            
+            config.pools.forEach(pool => {
+                // Compter le nombre d'équipes par groupe d'égalité
+                const tieGroupCounts = {};
+                (rankings[pool] || []).forEach(([id, stats]) => {
+                    tieGroupCounts[stats.tieGroup] = (tieGroupCounts[stats.tieGroup] || 0) + 1;
+                });
+
+                const poolDiv = document.createElement('div');
+                poolDiv.className = 'card';
+                poolDiv.innerHTML = `
+                    <div class="card-header">
+                        <h3 class="text-xl font-bold">Poule ${pool}</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">Pos</th>
+                                        <th class="px-4 py-3 text-left">Équipe</th>
+                                        <th class="px-4 py-3 text-center">J</th>
+                                        <th class="px-4 py-3 text-center">V</th>
+                                        <th class="px-4 py-3 text-center">N</th>
+                                        <th class="px-4 py-3 text-center">D</th>
+                                        <th class="px-4 py-3 text-center">BP</th>
+                                        <th class="px-4 py-3 text-center">BC</th>
+                                        <th class="px-4 py-3 text-center">Diff</th>
+                                        <th class="px-4 py-3 text-center">Pts</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ranking-body-${pool}">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-gray-50 border-t">
+                        <div class="flex flex-wrap gap-4 text-xs">
+                            <div class="flex items-center gap-1">
+                                <div class="w-3 h-3 bg-pink-100 border border-pink-300"></div>
+                                <span class="font-semibold text-pink-700">Équipes à égalité parfaite</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <span>1ère place</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <span>2ème place</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(poolDiv);
+                
+                const tbody = document.getElementById(`ranking-body-${pool}`);
+                (rankings[pool] || []).forEach(([id, stats], idx) => {
+                    const isTieGroup = tieGroupCounts[stats.tieGroup] > 1;
+                    const tieClass = isTieGroup ? 'tie-highlight' : '';
+                    const positionClass = idx === 0 ? 'first-place' : idx === 1 ? 'second-place' : '';
+                    
+                    const row = document.createElement('tr');
+                    row.className = `border-b border-gray-200 ${tieClass} ${positionClass}`;
+                    row.innerHTML = `
+                        <td class="px-4 py-3 font-bold text-lg">${idx + 1}</td>
+                        <td class="px-4 py-3 font-medium">${stats.name}</td>
+                        <td class="px-4 py-3 text-center">${stats.played}</td>
+                        <td class="px-4 py-3 text-center text-green-600 font-semibold">${stats.won}</td>
+                        <td class="px-4 py-3 text-center text-blue-600 font-semibold">${stats.drawn}</td>
+                        <td class="px-4 py-3 text-center text-red-600 font-semibold">${stats.lost}</td>
+                        <td class="px-4 py-3 text-center font-semibold">${stats.goalsFor}</td>
+                        <td class="px-4 py-3 text-center font-semibold">${stats.goalsAgainst}</td>
+                        <td class="px-4 py-3 text-center font-bold text-lg">
+                            ${stats.goalsFor - stats.goalsAgainst > 0 ? '+' : ''}
+                            ${stats.goalsFor - stats.goalsAgainst}
+                        </td>
+                        <td class="px-4 py-3 text-center font-bold text-xl text-blue-600">${stats.points}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            });
+        }
+
+        function resolveTeamReference(reference, allMatches) {
+            if (!reference.startsWith('V') && !reference.startsWith('P')) {
+                return reference;
+            }
+
+            const matchType = reference.charAt(0); // 'V' ou 'P'
+            const matchNumber = parseInt(reference.substring(1));
+            
+            // Trouver le match correspondant
+            const sourceMatch = allMatches.find(m => 
+                m.matchNumber === matchNumber && m.score1 !== '' && m.score2 !== ''
+            );
+
+            if (!sourceMatch) {
+                return reference; // Retourne la référence si le match n'est pas encore joué
+            }
+
+            const score1 = parseInt(sourceMatch.score1);
+            const score2 = parseInt(sourceMatch.score2);
+            const penalty1 = parseInt(sourceMatch.penalty1) || 0;
+            const penalty2 = parseInt(sourceMatch.penalty2) || 0;
+            
+            if (isNaN(score1) || isNaN(score2)) {
+                return reference;
+            }
+
+            // Déterminer le vainqueur et le perdant AVEC tirs au but
+            if (score1 > score2) {
+                return matchType === 'V' ? sourceMatch.team1 : sourceMatch.team2;
+            } else if (score1 < score2) {
+                return matchType === 'V' ? sourceMatch.team2 : sourceMatch.team1;
+            } else {
+                // En cas d'égalité, utiliser les tirs au but
+                if (penalty1 > penalty2) {
+                    return matchType === 'V' ? sourceMatch.team1 : sourceMatch.team2;
+                } else if (penalty1 < penalty2) {
+                    return matchType === 'V' ? sourceMatch.team2 : sourceMatch.team1;
+                } else {
+                    // Si égalité aux tirs au but aussi, retourner la référence originale
+                    return reference;
+                }
+            }
+        }
+
+        function updateEliminationBrackets() {
+            const rankings = calculateRankings();
+            if (!rankings) return;
+
+            const updatedMatches = eliminationMatches.map(match => {
+                const getTeamFromPlaceholder = (placeholder) => {
+                    if (placeholder.includes('°')) {
+                        const [position, pool] = placeholder.split('°');
+                        const rank = parseInt(position) - 1;
+                        return rankings[pool] && rankings[pool][rank] ? rankings[pool][rank][1].name : placeholder;
+                    }
+                    
+                    // Résoudre les références V et P AVEC TIRS AU BUT
+                    return resolveTeamReference(placeholder, eliminationMatches);
+                };
+
+                return {
+                    ...match,
+                    team1: getTeamFromPlaceholder(match.team1),
+                    team2: getTeamFromPlaceholder(match.team2)
+                };
+            });
+
+            eliminationMatches = updatedMatches;
+            renderEliminationMatches();
+        }
+
+        function renderEliminationMatches() {
+            const container = document.getElementById('elimination-matches-container');
+            container.innerHTML = '';
+            
+            const matchesBySlot = {};
+            eliminationMatches.forEach(match => {
+                if (!matchesBySlot[match.slotIndex]) {
+                    matchesBySlot[match.slotIndex] = [];
+                }
+                matchesBySlot[match.slotIndex].push(match);
+            });
+
+            const sortedSlots = Object.keys(matchesBySlot).sort((a, b) => parseInt(a) - parseInt(b));
+
+            sortedSlots.forEach(slotIndex => {
+                const slotMatches = matchesBySlot[slotIndex];
+                const hasBreakAfter = breaks.some(b => b.afterSlot === parseInt(slotIndex));
+                const breakInfo = breaks.find(b => b.afterSlot === parseInt(slotIndex));
+                const slotDuration = matchDurations[slotIndex] || config.matchDuration;
+
+                const slotDiv = document.createElement('div');
+                
+                // Créneau horaire - BANDEAU RÉDUIT
+                const timeSlotDiv = document.createElement('div');
+                timeSlotDiv.className = 'time-slot-header';
+                timeSlotDiv.innerHTML = `
+                    <div class="time-info">
+                        <select class="elim-time-slot-select text-lg font-bold bg-white border rounded px-3 py-1">
+                            ${timeSlots.map((time, index) => 
+                                `<option value="${index}" ${index == slotIndex ? 'selected' : ''}>${time}</option>`
+                            ).join('')}
+                        </select>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm">Durée:</span>
+                            <input type="number" min="5" max="30" value="${slotDuration}" class="elim-match-duration-input w-16 px-2 py-1 border rounded text-sm">
+                            <span class="text-sm">min</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="add-elim-match btn btn-success no-print btn-super-compact">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(timeSlotDiv);
+                
+                // Écouteurs d'événements pour le créneau
+                const timeSlotSelect = timeSlotDiv.querySelector('.elim-time-slot-select');
+                timeSlotSelect.addEventListener('change', function() {
+                    const newSlotIndex = parseInt(this.value);
+                    eliminationMatches = eliminationMatches.map(match => 
+                        match.slotIndex === parseInt(slotIndex) 
+                            ? { ...match, slotIndex: newSlotIndex }
+                            : match
+                    );
+                    renderEliminationMatches();
+                    showNotification(`Créneau horaire déplacé vers ${timeSlots[newSlotIndex]}`, 'info');
+                });
+                
+                const durationInput = timeSlotDiv.querySelector('.elim-match-duration-input');
+                durationInput.addEventListener('change', function() {
+                    const newDuration = parseInt(this.value);
+                    matchDurations[slotIndex] = newDuration;
+                    eliminationMatches = eliminationMatches.map(match =>
+                        match.slotIndex === parseInt(slotIndex)
+                            ? { ...match, duration: newDuration }
+                            : match
+                    );
+                    updateStatistics();
+                    showNotification(`Durée du créneau mise à jour: ${newDuration}min`, 'info');
+                });
+                
+                const addButton = timeSlotDiv.querySelector('.add-elim-match');
+                addButton.addEventListener('click', function() {
+                    const newMatch = {
+                        id: `elim-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        slotIndex: parseInt(slotIndex),
+                        matchNumber: eliminationMatches.length + 1,
+                        label: 'Match',
+                        team1: '',
+                        team2: '',
+                        field: config.fields[0],
+                        score1: '',
+                        score2: '',
+                        penalty1: '',
+                        penalty2: '',
+                        duration: slotDuration
+                    };
+                    eliminationMatches.push(newMatch);
+                    renderEliminationMatches();
+                    showNotification('Nouveau match d\'élimination ajouté', 'success');
+                });
+                
+                // Rendu des matchs du créneau
+                const matchesContainer = document.createElement('div');
+                matchesContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6';
+                matchesContainer.id = `elim-matches-slot-${slotIndex}`;
+                container.appendChild(matchesContainer);
+                
+                slotMatches.forEach(match => {
+                    const matchDiv = document.createElement('div');
+                    matchDiv.className = 'match-card';
+                    matchDiv.innerHTML = `
+                        <div class="flex justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs bg-purple-500 text-white px-2 py-1 rounded">
+                                    M${match.matchNumber}
+                                </span>
+                                <input type="text" value="${match.label}" class="elim-label-input text-sm px-2 py-1 border rounded font-bold flex-1" placeholder="Label du match">
+                            </div>
+                            <select class="elim-field-select text-sm px-2 py-1 border rounded">
+                                ${config.fields.map(f => 
+                                    `<option value="${f}" ${f === match.field ? 'selected' : ''}>T.${f}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <input type="text" value="${match.team1}" class="elim-team1-input flex-1 text-sm px-2 py-1 border rounded" placeholder="Équipe 1">
+                                <input type="number" min="0" value="${match.score1}" class="elim-score1-input w-12 text-center border rounded" placeholder="0">
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <input type="text" value="${match.team2}" class="elim-team2-input flex-1 text-sm px-2 py-1 border rounded" placeholder="Équipe 2">
+                                <input type="number" min="0" value="${match.score2}" class="elim-score2-input w-12 text-center border rounded" placeholder="0">
+                            </div>
+                        </div>
+
+                        <div class="border-t pt-2 mt-2">
+                            <div class="text-xs text-gray-600 mb-1 text-center">Tirs au but</div>
+                            <div class="flex items-center gap-2 justify-center">
+                                <input type="number" min="0" value="${match.penalty1}" class="elim-penalty1-input w-10 text-center border rounded text-sm" placeholder="0">
+                                <span class="text-xs">-</span>
+                                <input type="number" min="0" value="${match.penalty2}" class="elim-penalty2-input w-10 text-center border rounded text-sm" placeholder="0">
+                            </div>
+                        </div>
+
+                        <button class="delete-elim-match mt-2 w-full py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs no-print">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    `;
+                    
+                    matchesContainer.appendChild(matchDiv);
+                    
+                    // Écouteurs d'événements pour le match
+                    const labelInput = matchDiv.querySelector('.elim-label-input');
+                    labelInput.addEventListener('change', function() {
+                        match.label = this.value;
+                        showNotification(`Label du match mis à jour: ${this.value}`, 'info');
+                    });
+                    
+                    const fieldSelect = matchDiv.querySelector('.elim-field-select');
+                    fieldSelect.addEventListener('change', function() {
+                        match.field = this.value;
+                        showNotification(`Terrain changé: ${this.value}`, 'info');
+                    });
+                    
+                    const team1Input = matchDiv.querySelector('.elim-team1-input');
+                    team1Input.addEventListener('change', function() {
+                        match.team1 = this.value;
+                        showNotification('Équipe 1 mise à jour', 'info');
+                    });
+                    
+                    const team2Input = matchDiv.querySelector('.elim-team2-input');
+                    team2Input.addEventListener('change', function() {
+                        match.team2 = this.value;
+                        showNotification('Équipe 2 mise à jour', 'info');
+                    });
+                    
+                    const score1Input = matchDiv.querySelector('.elim-score1-input');
+                    score1Input.addEventListener('change', function() {
+                        match.score1 = this.value;
+                        showNotification('Score mis à jour', 'info');
+                    });
+                    
+                    const score2Input = matchDiv.querySelector('.elim-score2-input');
+                    score2Input.addEventListener('change', function() {
+                        match.score2 = this.value;
+                        showNotification('Score mis à jour', 'info');
+                    });
+                    
+                    const penalty1Input = matchDiv.querySelector('.elim-penalty1-input');
+                    penalty1Input.addEventListener('change', function() {
+                        match.penalty1 = this.value;
+                        showNotification('Tirs au but mis à jour', 'info');
+                    });
+                    
+                    const penalty2Input = matchDiv.querySelector('.elim-penalty2-input');
+                    penalty2Input.addEventListener('change', function() {
+                        match.penalty2 = this.value;
+                        showNotification('Tirs au but mis à jour', 'info');
+                    });
+                    
+                    const deleteButton = matchDiv.querySelector('.delete-elim-match');
+                    deleteButton.addEventListener('click', function() {
+                        eliminationMatches = eliminationMatches.filter(m => m.id !== match.id);
+                        renderEliminationMatches();
+                        showNotification('Match d\'élimination supprimé', 'warning');
+                    });
+                });
+                
+                // Pause après le créneau
+                if (hasBreakAfter) {
+                    const breakDiv = document.createElement('div');
+                    breakDiv.className = 'bg-yellow-100 border-l-4 border-yellow-500 p-4 my-2 rounded';
+                    breakDiv.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-bold text-yellow-800">⏸️ ${breakInfo.label}</p>
+                                <p class="text-sm text-yellow-700">Durée: ${breakInfo.duration} minutes</p>
+                            </div>
+                            <div class="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
+                                Après le créneau ${parseInt(slotIndex) + 1}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(breakDiv);
+                }
+            });
+        }
+
+        function calculateFinalRanking() {
+            const ranking = Array(24).fill('À déterminer');
+            
+            // Mapper les matchs de classement aux places
+            const placementMapping = {
+                36: [0, 1],   // FINALE -> 1ère et 2ème place
+                35: [2, 3],   // 3°-4° place -> 3ème et 4ème
+                33: [4, 5],   // 5°-6° place -> 5ème et 6ème
+                34: [6, 7],   // 7°-8° place -> 7ème et 8ème
+                29: [8, 9],   // 9°-10° place -> 9ème et 10ème
+                30: [10, 11], // 11°-12° place -> 11ème et 12ème
+                31: [12, 13], // 13°-14° place -> 13ème et 14ème
+                32: [14, 15], // 15°-16° place -> 15ème et 16ème
+                25: [16, 17], // 17°-18° place -> 17ème et 18ème
+                26: [18, 19], // 19°-20° place -> 19ème et 20ème
+                27: [20, 21], // 21°-22° place -> 21ème et 22ème
+                28: [22, 23]  // 23°-24° place -> 23ème et 24ème
+            };
+
+            eliminationMatches.forEach(match => {
+                if (match.score1 !== '' && match.score2 !== '' && placementMapping[match.matchNumber]) {
+                    const score1 = parseInt(match.score1);
+                    const score2 = parseInt(match.score2);
+                    const penalty1 = parseInt(match.penalty1) || 0;
+                    const penalty2 = parseInt(match.penalty2) || 0;
+                    
+                    if (!isNaN(score1) && !isNaN(score2)) {
+                        const [winnerPos, loserPos] = placementMapping[match.matchNumber];
+                        
+                        // Utilisation correcte des tirs au but
+                        if (score1 > score2) {
+                            ranking[winnerPos] = match.team1;
+                            ranking[loserPos] = match.team2;
+                        } else if (score1 < score2) {
+                            ranking[winnerPos] = match.team2;
+                            ranking[loserPos] = match.team1;
+                        } else {
+                            // En cas d'égalité, utiliser les tirs au but
+                            if (penalty1 > penalty2) {
+                                ranking[winnerPos] = match.team1;
+                                ranking[loserPos] = match.team2;
+                            } else if (penalty1 < penalty2) {
+                                ranking[winnerPos] = match.team2;
+                                ranking[loserPos] = match.team1;
+                            } else {
+                                // Si égalité aux tirs au but aussi, marquer comme égalité
+                                ranking[winnerPos] = `${match.team1} (égalité)`;
+                                ranking[loserPos] = `${match.team2} (égalité)`;
+                            }
+                        }
+                    }
+                }
+            });
+            
+            finalRanking = ranking;
+            renderFinalRanking();
+        }
+
+        function renderFinalRanking() {
+            const container = document.getElementById('final-ranking-container');
+            const emptyMessage = document.getElementById('empty-ranking-message');
+            container.innerHTML = '';
+            
+            const getMedal = (position) => {
+                switch(position) {
+                    case 0: return '🥇';
+                    case 1: return '🥈';
+                    case 2: return '🥉';
+                    default: return `#${position + 1}`;
+                }
+            };
+
+            const getPositionColor = (position) => {
+                switch(position) {
+                    case 0: return 'bg-yellow-100 border-yellow-300';
+                    case 1: return 'bg-gray-100 border-gray-300';
+                    case 2: return 'bg-orange-100 border-orange-300';
+                    case 3: return 'bg-blue-50 border-blue-200';
+                    case 4: case 5: case 6: case 7: return 'bg-green-50 border-green-200';
+                    default: return 'bg-white border-gray-200';
+                }
+            };
+
+            let hasResults = false;
+            
+            finalRanking.forEach((team, index) => {
+                if (team !== 'À déterminer') {
+                    hasResults = true;
+                    const teamCard = document.createElement('div');
+                    teamCard.className = `p-4 rounded-lg border-2 ${getPositionColor(index)} transition-all hover:scale-105`;
+                    teamCard.innerHTML = `
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-lg">${getMedal(index)}</span>
+                            <span class="text-sm text-gray-600 px-2 py-1 bg-gray-100 rounded">
+                                Place ${index + 1}
+                            </span>
+                        </div>
+                        <div class="text-center">
+                            <div class="font-semibold text-lg truncate">
+                                ${team}
+                            </div>
+                            ${index < 3 && `
+                                <div class="text-xs text-gray-600 mt-1">
+                                    ${index === 0 ? 'Champion' : index === 1 ? 'Finaliste' : '3ème place'}
+                                </div>
+                            `}
+                        </div>
+                    `;
+                    container.appendChild(teamCard);
+                }
+            });
+            
+            // Afficher ou masquer le message vide
+            if (hasResults) {
+                emptyMessage.classList.add('hidden');
+            } else {
+                emptyMessage.classList.remove('hidden');
+            }
+        }
+
+        // FONCTIONS UTILITAIRES
+
+        function updateConfigFromForm() {
+            config = {
+                ...config,
+                pools: document.getElementById('pools-input').value.split(',').map(p => p.trim()).filter(p => p),
+                fields: document.getElementById('fields-input').value.split(',').map(f => f.trim()).filter(f => f),
+                teamsPerPool: parseInt(document.getElementById('teams-per-pool-input').value) || 6,
+                startTime: document.getElementById('start-time-input').value,
+                endTime: document.getElementById('end-time-input').value,
+                matchDuration: parseInt(document.getElementById('match-duration-input').value) || 17,
+                breakDuration: parseInt(document.getElementById('break-duration-input').value) || 15,
+                tournamentStartDate: document.getElementById('tournament-start-date').value,
+                tournamentDays: parseInt(document.getElementById('tournament-days').value) || 1
+            };
+            
+            document.getElementById('match-duration-value').textContent = config.matchDuration;
+            
+            calculateAllTimeSlots();
+            updateStatistics();
+            updateTournamentDateDisplay();
+        }
+
+        function updateSettingsForm() {
+            document.getElementById('pools-input').value = config.pools.join(', ');
+            document.getElementById('fields-input').value = config.fields.join(', ');
+            document.getElementById('teams-per-pool-input').value = config.teamsPerPool;
+            document.getElementById('start-time-input').value = config.startTime;
+            document.getElementById('end-time-input').value = config.endTime;
+            document.getElementById('match-duration-input').value = config.matchDuration;
+            document.getElementById('match-duration-value').textContent = config.matchDuration;
+            document.getElementById('break-duration-input').value = config.breakDuration;
+            document.getElementById('tournament-start-date').value = config.tournamentStartDate;
+            document.getElementById('tournament-days').value = config.tournamentDays;
+            document.getElementById('daily-start-time').value = config.dailySchedule[0]?.startTime || config.startTime;
+            document.getElementById('daily-end-time').value = config.dailySchedule[0]?.endTime || config.endTime;
+            
+            // Mettre à jour le toggle de sauvegarde automatique
+            document.getElementById('auto-save-toggle').checked = autoSaveEnabled;
+            updateLastSaveTime();
+        }
+
+        function renderTimeSlots() {
+            const container = document.getElementById('time-slots-container');
+            container.innerHTML = '';
+            
+            if (timeSlots.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-6 text-center py-4 text-gray-500">
+                        <i class="fas fa-clock text-2xl mb-2"></i>
+                        <p>Aucun créneau horaire calculé</p>
+                        <p class="text-sm">Vérifiez les paramètres de temps</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            timeSlots.forEach((time, index) => {
+                const hasBreakAfter = breaks.some(b => b.afterSlot === index);
+                const breakInfo = breaks.find(b => b.afterSlot === index);
+                
+                const timeSlotDiv = document.createElement('div');
+                timeSlotDiv.className = `text-center p-3 rounded border transition-all ${
+                    hasBreakAfter ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-gray-200'
+                }`;
+                
+                timeSlotDiv.innerHTML = `
+                    <div class="font-bold text-lg mb-1">${time}</div>
+                    <div class="text-xs text-gray-600 mb-1">Créneau ${index + 1}</div>
+                    ${hasBreakAfter ? `
+                        <div class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                            ⏸️ Pause après: ${breakInfo.label}
+                        </div>
+                    ` : ''}
+                `;
+                container.appendChild(timeSlotDiv);
+            });
+            
+            document.getElementById('time-slots-count').textContent = timeSlots.length;
+            
+            // Calcul de la durée totale
+            const totalMinutes = timeSlots.length * config.matchDuration + 
+                                breaks.reduce((sum, b) => sum + b.duration, 0);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            document.getElementById('total-tournament-duration').textContent = 
+                `${hours}h${minutes.toString().padStart(2, '0')}`;
+        }
+
+        function updateStatistics() {
+            const totalMatches = groupMatches.length + eliminationMatches.length;
+            const totalTimeSlots = timeSlots.length;
+            const totalMatchDuration = (totalTimeSlots * config.matchDuration) / 60;
+            const totalBreakDuration = breaks.reduce((sum, breakItem) => sum + breakItem.duration, 0) / 60;
+            const totalTournamentDuration = totalMatchDuration + totalBreakDuration;
+            
+            document.getElementById('total-matches').textContent = totalMatches;
+            document.getElementById('total-time-slots').textContent = totalTimeSlots;
+            document.getElementById('total-match-duration').textContent = totalMatchDuration.toFixed(1) + 'h';
+            document.getElementById('total-break-duration').textContent = totalBreakDuration.toFixed(1) + 'h';
+            document.getElementById('total-tournament-duration').textContent = totalTournamentDuration.toFixed(1) + 'h';
+        }
+
+        function addBreak() {
+            const newAfterSlot = breaks.length > 0 ? Math.max(...breaks.map(b => b.afterSlot)) + 1 : 0;
+            
+            breaks.push({
+                afterSlot: newAfterSlot,
+                label: 'NOUVELLE PAUSE',
+                duration: config.breakDuration
+            });
+            
+            renderBreaks();
+            calculateAllTimeSlots();
+            showNotification('Coupure ajoutée avec succès!', 'success');
+        }
+
+        function renderBreaks() {
+            const container = document.getElementById('breaks-container');
+            container.innerHTML = '';
+            
+            // Options prédéfinies pour les labels de coupure
+            const breakLabels = [
+                'TIRS AU BUT',
+                'PAUSE',
+                'PAUSE DÉJEUNER',
+                'COUPURE'
+            ];
+            
+            breaks.forEach((breakItem, idx) => {
+                const breakDiv = document.createElement('div');
+                breakDiv.className = 'flex flex-col md:flex-row gap-3 items-start md:items-center p-3 border rounded-lg';
+                breakDiv.innerHTML = `
+                    <div class="flex-1">
+                        <label class="block text-xs text-gray-600 mb-1">Après le créneau</label>
+                        <input type="number" min="0" max="${timeSlots.length - 1}" value="${breakItem.afterSlot}" class="break-slot-input w-full px-2 py-1 border rounded">
+                        <p class="text-xs text-gray-500 mt-1">${timeSlots[breakItem.afterSlot] || 'N/A'}</p>
+                    </div>
+                    
+                    <div class="flex-1">
+                        <label class="block text-xs text-gray-600 mb-1">Label</label>
+                        <select class="break-label-select w-full px-2 py-1 border rounded">
+                            ${breakLabels.map(label => 
+                                `<option value="${label}" ${label === breakItem.label ? 'selected' : ''}>${label}</option>`
+                            ).join('')}
+                            <option value="CUSTOM" ${!breakLabels.includes(breakItem.label) ? 'selected' : ''}>Personnalisé...</option>
+                        </select>
+                        <input type="text" value="${!breakLabels.includes(breakItem.label) ? breakItem.label : ''}" 
+                               class="break-custom-label-input w-full px-2 py-1 border rounded mt-2 ${breakLabels.includes(breakItem.label) ? 'hidden' : ''}" 
+                               placeholder="Label personnalisé">
+                    </div>
+                    
+                    <div class="flex-1">
+                        <label class="block text-xs text-gray-600 mb-1">Durée (minutes)</label>
+                        <input type="number" min="0" max="180" value="${breakItem.duration}" class="break-duration-input w-full px-2 py-1 border rounded">
+                    </div>
+                    
+                    <button class="delete-break p-2 bg-red-500 text-white rounded hover:bg-red-600 no-print">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                
+                container.appendChild(breakDiv);
+                
+                // Écouteurs d'événements
+                const slotInput = breakDiv.querySelector('.break-slot-input');
+                slotInput.addEventListener('change', function() {
+                    breakItem.afterSlot = parseInt(this.value) || 0;
+                    calculateAllTimeSlots();
+                    showNotification(`Pause déplacée après le créneau ${this.value}`, 'info');
+                });
+                
+                const labelSelect = breakDiv.querySelector('.break-label-select');
+                const customLabelInput = breakDiv.querySelector('.break-custom-label-input');
+                
+                labelSelect.addEventListener('change', function() {
+                    if (this.value === 'CUSTOM') {
+                        customLabelInput.classList.remove('hidden');
+                        customLabelInput.focus();
+                    } else {
+                        customLabelInput.classList.add('hidden');
+                        breakItem.label = this.value;
+                        showNotification(`Label de pause mis à jour: ${this.value}`, 'info');
+                    }
+                });
+                
+                customLabelInput.addEventListener('change', function() {
+                    breakItem.label = this.value;
+                    showNotification(`Label de pause mis à jour: ${this.value}`, 'info');
+                });
+                
+                const durationInput = breakDiv.querySelector('.break-duration-input');
+                durationInput.addEventListener('change', function() {
+                    breakItem.duration = parseInt(this.value) || 15;
+                    calculateAllTimeSlots();
+                    showNotification(`Durée de pause mise à jour: ${this.value}min`, 'info');
+                });
+                
+                const deleteButton = breakDiv.querySelector('.delete-break');
+                deleteButton.addEventListener('click', function() {
+                    breaks.splice(idx, 1);
+                    renderBreaks();
+                    calculateAllTimeSlots();
+                    showNotification('Pause supprimée', 'warning');
+                });
+            });
+        }
+
+        function generateDefaultStructure() {
+            generateDefaultGroupMatches();
+            generateDefaultEliminationMatches();
+        }
+
+        function saveTournament() {
+            const tournamentData = {
+                config,
+                teams,
+                timeSlots,
+                breaks,
+                groupMatches,
+                eliminationMatches,
+                matchDurations,
+                finalRanking,
+                timerState: {
+                    seconds: timerSeconds,
+                    running: timerRunning,
+                    duration: timerDuration,
+                    finished: timerFinished
+                },
+                timestamp: new Date().toISOString(),
+                version: '1.0',
+                // NOUVEAU: Sauvegarde des équipes inscrites
+                allTeams: allTeams
+            };
+            
+            const blob = new Blob([JSON.stringify(tournamentData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tournoi-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Mettre à jour la sauvegarde locale aussi
+            saveToLocalStorage();
+        }
+
+        function loadTournament(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const tournamentData = JSON.parse(e.target.result);
+                    
+                    if (confirm('Charger cette sauvegarde ?')) {
+                        config = tournamentData.config || config;
+                        teams = tournamentData.teams || teams;
+                        timeSlots = tournamentData.timeSlots || timeSlots;
+                        breaks = tournamentData.breaks || breaks;
+                        groupMatches = tournamentData.groupMatches || [];
+                        eliminationMatches = tournamentData.eliminationMatches || [];
+                        matchDurations = tournamentData.matchDurations || {};
+                        finalRanking = tournamentData.finalRanking || [];
+                        
+                        // NOUVEAU: Chargement des équipes inscrites
+                        allTeams = tournamentData.allTeams || [];
+                        
+                        // Restaurer l'état du chronomètre UNIQUE
+                        if (tournamentData.timerState) {
+                            timerSeconds = tournamentData.timerState.seconds || (17 * 60);
+                            timerRunning = false; // Toujours repartir en pause au chargement
+                            timerDuration = tournamentData.timerState.duration || (17 * 60);
+                            timerFinished = tournamentData.timerState.finished || false;
+                            
+                            // Mettre à jour l'interface du chronomètre
+                            document.getElementById('timer-minutes').value = Math.floor(timerDuration / 60);
+                            updateTimerDisplay();
+                            updateTimerStatus();
+                            
+                            // Appliquer les styles appropriés
+                            const timer = document.getElementById('floating-timer');
+                            timer.classList.remove('timer-running', 'timer-paused', 'timer-finished');
+                            if (timerFinished) {
+                                timer.classList.add('timer-finished');
+                            } else if (timerRunning) {
+                                timer.classList.add('timer-running');
+                            } else if (timerSeconds < timerDuration) {
+                                timer.classList.add('timer-paused');
+                            }
+                        }
+                        
+                        updateSettingsForm();
+                        renderGroupMatches();
+                        renderEliminationMatches();
+                        calculateAllTimeSlots();
+                        updateStatistics();
+                        renderRankings();
+                        renderFinalRanking();
+                        renderDailySchedule();
+                        updateTournamentDateDisplay();
+                        
+                        // NOUVEAU: Mise à jour de l'affichage des équipes inscrites
+                        renderTeamsList();
+                        
+                        // Sauvegarder dans le stockage local
+                        saveToLocalStorage();
+                        
+                        showNotification('Tournoi chargé avec succès!', 'success');
+                    }
+                } catch (error) {
+                    alert('Erreur lors du chargement : ' + error.message);
+                    showNotification('Erreur lors du chargement du tournoi', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetEverything() {
+            if (confirm('Réinitialiser TOUTES les données (équipes, matchs, classements, résultats) ?')) {
+                config = {...defaultConfig};
+                breaks = [...defaultBreaks];
+                matchDurations = {};
+                finalRanking = Array(24).fill('À déterminer');
+                
+                // NOUVEAU: Réinitialisation des équipes inscrites
+                allTeams = [];
+                
+                // Réinitialiser le chronomètre UNIQUE
+                setTimerDuration(17);
+                
+                calculateAllTimeSlots();
+                updateSettingsForm();
+                updateStatistics();
+                renderDailySchedule();
+                updateTournamentDateDisplay();
+                
+                // NOUVEAU: Mise à jour de l'affichage des équipes inscrites
+                renderTeamsList();
+                
+                setTimeout(() => {
+                    generateDefaultGroupMatches();
+                    generateDefaultEliminationMatches();
+                }, 100);
+                
+                // Sauvegarder les changements
+                saveToLocalStorage();
+            }
+        }
+    </script>
+</body>
+</html>
