@@ -285,6 +285,68 @@
             transform: translateY(-1px);
         }
         
+        /* === STYLES POUR L'ACTUALISATION AUTOMATIQUE === */
+        .auto-refresh-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 9999;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* FORCER l'affichage sur mobile */
+        @media (max-width: 768px) {
+            .auto-refresh-indicator {
+                bottom: 80px;
+                right: 15px;
+                font-size: 11px;
+                padding: 8px 12px;
+                z-index: 9999;
+            }
+            
+            .refresh-btn {
+                bottom: 80px;
+                left: 15px;
+                font-size: 12px;
+                padding: 10px 16px;
+                z-index: 9999;
+            }
+        }
+        /* === FIN DES STYLES D'ACTUALISATION === */
+        
         /* Navigation mobile COMPACTE */
         @media (max-width: 768px) {
             .mobile-nav {
@@ -4286,5 +4348,66 @@ function pauseTimer() {
             }
         }
     </script>
+    </script>
+
+    <!-- === BOUTONS D'ACTUALISATION === -->
+    <button class="refresh-btn no-print" onclick="refreshData()">
+        <i class="fas fa-sync-alt"></i>
+        Actualiser
+    </button>
+    
+    <div class="auto-refresh-indicator no-print" id="refreshIndicator">
+        <i class="fas fa-circle"></i>
+        <span id="refreshText">Actualisation auto</span>
+    </div>
+
+    <script>
+        // Fonction d'actualisation manuelle
+        function refreshData() {
+            const indicator = document.getElementById('refreshIndicator');
+            const text = document.getElementById('refreshText');
+            
+            // Animation de l'indicateur
+            indicator.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+            text.textContent = 'Actualisation...';
+            
+            // Rechargement après un petit délai pour voir l'animation
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        }
+        
+        // Actualisation automatique toutes les 2 minutes
+        let refreshCountdown = 120; // 2 minutes en secondes
+        
+        function updateCountdown() {
+            const text = document.getElementById('refreshText');
+            const minutes = Math.floor(refreshCountdown / 60);
+            const seconds = refreshCountdown % 60;
+            
+            text.textContent = `Prochaine actualisation: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (refreshCountdown <= 0) {
+                refreshData();
+                refreshCountdown = 120; // Reset du compte à rebours
+            } else {
+                refreshCountdown--;
+            }
+        }
+        
+        // Démarrer le compte à rebours
+        setInterval(updateCountdown, 1000);
+        
+        // Actualisation quand on revient sur l'onglet
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                // Recharge après 5 secondes quand on revient sur l'app
+                setTimeout(() => {
+                    location.reload();
+                }, 5000);
+            }
+        });
+    </script>
 </body>
 </html>
+
